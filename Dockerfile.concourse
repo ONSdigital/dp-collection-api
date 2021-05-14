@@ -1,0 +1,7 @@
+FROM onsdigital/dp-concourse-tools-ubuntu
+
+WORKDIR /app/
+
+COPY dp-collection-api .
+
+CMD ./dp-collection-api
