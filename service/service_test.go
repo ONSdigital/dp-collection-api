@@ -31,8 +31,7 @@ func TestNew(t *testing.T) {
 
 	Convey("Having a set of mocked dependencies", t, func() {
 
-		cfg, err := config.Get()
-		So(err, ShouldBeNil)
+		cfg := &config.Config{}
 
 		hcMock := &mock.HealthCheckerMock{
 			AddCheckFunc: func(name string, checker healthcheck.Checker) error { return nil },
@@ -82,8 +81,7 @@ func TestStart(t *testing.T) {
 
 	Convey("Having a correctly initialised Service with mocked dependencies", t, func() {
 
-		cfg, err := config.Get()
-		So(err, ShouldBeNil)
+		cfg := &config.Config{}
 
 		hcMock := &mock.HealthCheckerMock{
 			AddCheckFunc: func(name string, checker healthcheck.Checker) error { return nil },
@@ -139,9 +137,9 @@ func TestStart(t *testing.T) {
 func TestClose(t *testing.T) {
 
 	Convey("Having a correctly initialised service with mocked dependencies", t, func() {
-		cfg, err := config.Get()
-		So(err, ShouldBeNil)
-
+		cfg := &config.Config{
+			GracefulShutdownTimeout: 5 * time.Second,
+		}
 		hcStopped := false
 
 		// healthcheck Stop does not depend on any other service being closed/stopped
