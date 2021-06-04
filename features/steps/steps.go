@@ -7,13 +7,13 @@ import (
 	"strings"
 )
 
-func (c *Component) RegisterSteps(ctx *godog.ScenarioContext) {
+func (c *CollectionComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	c.apiFeature.RegisterSteps(ctx)
 
 	ctx.Step(`^I should receive a hello-world response$`, c.iShouldReceiveAHelloworldResponse)
 }
 
-func (c *Component) iShouldReceiveAHelloworldResponse() error {
+func (c *CollectionComponent) iShouldReceiveAHelloworldResponse() error {
 	responseBody := c.apiFeature.HttpResponse.Body
 	body, _ := ioutil.ReadAll(responseBody)
 

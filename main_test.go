@@ -18,7 +18,7 @@ type ComponentTest struct {
 }
 
 func (f *ComponentTest) InitializeScenario(ctx *godog.ScenarioContext) {
-	component, err := steps.NewComponent()
+	component, err := steps.NewCollectionComponent()
 	if err != nil {
 		panic(err)
 	}
