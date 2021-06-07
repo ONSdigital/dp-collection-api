@@ -11,6 +11,10 @@ import (
 	"github.com/cucumber/godog/colors"
 )
 
+// Mongo version here is overridden in the pipeline by the URL provided in the component.sh
+const MongoVersion = "4.0.23"
+const DatabaseName = "testing"
+
 var componentFlag = flag.Bool("component", false, "perform component tests")
 
 type ComponentTest struct {
@@ -18,13 +22,14 @@ type ComponentTest struct {
 }
 
 func (f *ComponentTest) InitializeScenario(ctx *godog.ScenarioContext) {
-	component, err := steps.NewCollectionComponent()
+	component, err := steps.NewCollectionComponent(f.MongoFeature)
 	if err != nil {
 		panic(err)
 	}
 
 	ctx.BeforeScenario(func(*godog.Scenario) {
 		component.Reset()
+		f.MongoFeature.Reset()
 	})
 
 	ctx.AfterScenario(func(*godog.Scenario, error) {
@@ -35,7 +40,12 @@ func (f *ComponentTest) InitializeScenario(ctx *godog.ScenarioContext) {
 }
 
 func (f *ComponentTest) InitializeTestSuite(ctx *godog.TestSuiteContext) {
-
+	ctx.BeforeSuite(func() {
+		f.MongoFeature = componenttest.NewMongoFeature(componenttest.MongoOptions{MongoVersion: MongoVersion, DatabaseName: DatabaseName})
+	})
+	ctx.AfterSuite(func() {
+		f.MongoFeature.Close()
+	})
 }
 
 func TestComponent(t *testing.T) {

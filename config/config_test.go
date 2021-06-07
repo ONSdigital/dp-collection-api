@@ -28,6 +28,14 @@ func TestConfig(t *testing.T) {
 					GracefulShutdownTimeout:    5 * time.Second,
 					HealthCheckInterval:        30 * time.Second,
 					HealthCheckCriticalTimeout: 90 * time.Second,
+					MongoConfig: MongoConfig{
+						BindAddr:              "localhost:27017",
+						CollectionsDatabase:   "collections",
+						CollectionsCollection: "collections",
+						Username:              "test",
+						Password:              "test",
+						CAFilePath:            "",
+					},
 				})
 			})
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/ONSdigital/dp-collection-api/mongo"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"net/http"
@@ -25,6 +26,22 @@ var GetHTTPServer = func(bindAddr string, router http.Handler) HTTPServer {
 	return s
 }
 
+var GetMongoDB = func(ctx context.Context, cfg config.MongoConfig) (MongoDB, error) {
+	mongodb := &mongo.Mongo{
+		CAFilePath:            cfg.CAFilePath,
+		CollectionsCollection: cfg.CollectionsCollection,
+		Database:              cfg.CollectionsDatabase,
+		Username:              cfg.Username,
+		Password:              cfg.Password,
+		URI:                   cfg.BindAddr,
+	}
+	err := mongodb.Init(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return mongodb, nil
+}
+
 // Service contains all the configs, server and clients to run the dp-topic-api API
 type Service struct {
 	cfg         *config.Config
@@ -32,6 +49,7 @@ type Service struct {
 	router      *mux.Router
 	api         *api.API
 	healthCheck HealthChecker
+	mongoDB     MongoDB
 }
 
 // New initialises all the service dependencies
@@ -43,8 +61,15 @@ func New(ctx context.Context, cfg *config.Config, buildTime, gitCommit, version 
 		log.Fatal(ctx, "error creating version info", err)
 		return nil, err
 	}
+
+	mongoDB, err := GetMongoDB(ctx, cfg.MongoConfig)
+	if err != nil {
+		log.Fatal(ctx, "failed to initialise mongo db", err)
+		return nil, err
+	}
+
 	healthCheck := GetHealthCheck(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
-	if err := registerHealthChecks(ctx); err != nil {
+	if err := registerHealthChecks(ctx, healthCheck, mongoDB); err != nil {
 		return nil, errors.Wrap(err, "unable to register health checks")
 	}
 
@@ -61,6 +86,7 @@ func New(ctx context.Context, cfg *config.Config, buildTime, gitCommit, version 
 		router:      r,
 		api:         api,
 		healthCheck: healthCheck,
+		mongoDB:     mongoDB,
 	}, nil
 }
 
@@ -97,12 +123,17 @@ func (svc *Service) Close(ctx context.Context) error {
 		// stop any incoming requests
 		if svc.server != nil {
 			if err := svc.server.Shutdown(ctx); err != nil {
-				log.Event(ctx, "failed to shutdown http server", log.ERROR)
+				log.Error(ctx, "failed to shutdown http server", err)
 				hasShutdownError = true
 			}
 		}
 
-		// TODO: Close other dependencies, in the expected order
+		if svc.mongoDB != nil {
+			if err := svc.mongoDB.Close(ctx); err != nil {
+				log.Error(ctx, "error closing mongo db client", err)
+				hasShutdownError = true
+			}
+		}
 	}()
 
 	// wait for shutdown success (via cancel) or failure (timeout)
@@ -126,9 +157,17 @@ func (svc *Service) Close(ctx context.Context) error {
 }
 
 // registerHealthChecks adds the checkers for the service clients to the health check object.
-func registerHealthChecks(ctx context.Context) (err error) {
+func registerHealthChecks(ctx context.Context, hc HealthChecker, mongoDB MongoDB) (err error) {
 
-	// TODO: add other health checks here, as per dp-upload-service
+	hasErrors := false
 
+	if err = hc.AddCheck("Mongo DB", mongoDB.Checker); err != nil {
+		hasErrors = true
+		log.Error(ctx, "error adding check for mongo db client", err)
+	}
+
+	if hasErrors {
+		return errors.New("Error(s) registering checkers for health check")
+	}
 	return nil
 }

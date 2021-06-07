@@ -3,9 +3,12 @@ package steps
 import (
 	"context"
 	"github.com/ONSdigital/dp-collection-api/config"
+	"github.com/ONSdigital/dp-collection-api/mongo"
 	"github.com/ONSdigital/dp-collection-api/service"
 	"github.com/ONSdigital/dp-collection-api/service/mock"
+	"github.com/benweissmann/memongo"
 	"net/http"
+	"strconv"
 	"time"
 
 	componenttest "github.com/ONSdigital/dp-component-test"
@@ -22,7 +25,7 @@ type CollectionComponent struct {
 	apiFeature     *componenttest.APIFeature
 }
 
-func NewCollectionComponent() (*CollectionComponent, error) {
+func NewCollectionComponent(mongoFeature *componenttest.MongoFeature) (*CollectionComponent, error) {
 
 	c := &CollectionComponent{
 		HTTPServer:     &http.Server{},
@@ -38,6 +41,20 @@ func NewCollectionComponent() (*CollectionComponent, error) {
 	}
 
 	c.apiFeature = componenttest.NewAPIFeature(c.InitialiseService)
+
+	mongodb := &mongo.Mongo{
+		Database:              memongo.RandomDatabase(),
+		URI:                   "localhost:" + strconv.Itoa(mongoFeature.Server.Port()),
+		CollectionsCollection: c.Config.MongoConfig.CollectionsCollection,
+	}
+
+	if err := mongodb.Init(context.TODO()); err != nil {
+		return nil, err
+	}
+
+	service.GetMongoDB = func(ctx context.Context, cfg config.MongoConfig) (service.MongoDB, error) {
+		return mongodb, nil
+	}
 
 	return c, nil
 }

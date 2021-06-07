@@ -45,6 +45,11 @@ func TestNew(t *testing.T) {
 			return serverMock
 		}
 
+		mongoDBMock := &mock.MongoDBMock{}
+		service.GetMongoDB = func(ctx context.Context, cfg config.MongoConfig) (service.MongoDB, error) {
+			return mongoDBMock, nil
+		}
+
 		Convey("Given that health check versionInfo cannot be created due to a wrong build time", func() {
 			wrongBuildTime := "wrongFormat"
 
@@ -70,8 +75,41 @@ func TestNew(t *testing.T) {
 				So(svc, ShouldNotBeNil)
 
 				Convey("Then the expected health checks are registered", func() {
-					So(len(hcMock.AddCheckCalls()), ShouldEqual, 0)
+					So(len(hcMock.AddCheckCalls()), ShouldEqual, 1)
+					So(hcMock.AddCheckCalls()[0].Name, ShouldResemble, "Mongo DB")
 				})
+			})
+		})
+	})
+
+	Convey("Given an error occurs when MongoDB is initialised", t, func() {
+
+		cfg := &config.Config{}
+
+		hcMock := &mock.HealthCheckerMock{
+			AddCheckFunc: func(name string, checker healthcheck.Checker) error { return nil },
+		}
+		service.GetHealthCheck = func(version healthcheck.VersionInfo, criticalTimeout, interval time.Duration) service.HealthChecker {
+			return hcMock
+		}
+
+		serverMock := &mock.HTTPServerMock{}
+		service.GetHTTPServer = func(bindAddr string, router http.Handler) service.HTTPServer {
+			return serverMock
+		}
+
+		expectedErr := errors.New("mongodb failed to initialised")
+		service.GetMongoDB = func(ctx context.Context, cfg config.MongoConfig) (service.MongoDB, error) {
+			return nil, expectedErr
+		}
+
+		Convey("When service.New is called", func() {
+			svc, err := service.New(ctx, cfg, testBuildTime, testGitCommit, testVersion)
+			So(svc, ShouldBeNil)
+
+			Convey("Then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err, ShouldEqual, expectedErr)
 			})
 		})
 	})
@@ -94,6 +132,11 @@ func TestStart(t *testing.T) {
 		serverMock := &mock.HTTPServerMock{}
 		service.GetHTTPServer = func(bindAddr string, router http.Handler) service.HTTPServer {
 			return serverMock
+		}
+
+		mongoDBMock := &mock.MongoDBMock{}
+		service.GetMongoDB = func(ctx context.Context, cfg config.MongoConfig) (service.MongoDB, error) {
+			return mongoDBMock, nil
 		}
 
 		serverWg := &sync.WaitGroup{}
@@ -145,6 +188,12 @@ func TestClose(t *testing.T) {
 		// healthcheck Stop does not depend on any other service being closed/stopped
 		hcMock := &mock.HealthCheckerMock{
 			StopFunc: func() { hcStopped = true },
+			AddCheckFunc: func(name string, checker healthcheck.Checker) error {
+				return nil
+			},
+		}
+		service.GetHealthCheck = func(version healthcheck.VersionInfo, criticalTimeout, interval time.Duration) service.HealthChecker {
+			return hcMock
 		}
 
 		// server Shutdown will fail if healthcheck is not stopped
@@ -156,12 +205,17 @@ func TestClose(t *testing.T) {
 				return nil
 			},
 		}
-
-		service.GetHealthCheck = func(version healthcheck.VersionInfo, criticalTimeout, interval time.Duration) service.HealthChecker {
-			return hcMock
-		}
 		service.GetHTTPServer = func(bindAddr string, router http.Handler) service.HTTPServer {
 			return serverMock
+		}
+
+		mongoDBMock := &mock.MongoDBMock{
+			CloseFunc: func(ctx context.Context) error {
+				return nil
+			},
+		}
+		service.GetMongoDB = func(ctx context.Context, cfg config.MongoConfig) (service.MongoDB, error) {
+			return mongoDBMock, nil
 		}
 
 		svc, err := service.New(ctx, cfg, testBuildTime, testGitCommit, testVersion)
@@ -174,6 +228,7 @@ func TestClose(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(len(hcMock.StopCalls()), ShouldEqual, 1)
 				So(len(serverMock.ShutdownCalls()), ShouldEqual, 1)
+				So(len(mongoDBMock.CloseCalls()), ShouldEqual, 1)
 			})
 		})
 

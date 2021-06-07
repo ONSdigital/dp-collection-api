@@ -9,6 +9,7 @@ import (
 
 //go:generate moq -out mock/server.go -pkg mock . HTTPServer
 //go:generate moq -out mock/healthCheck.go -pkg mock . HealthChecker
+//go:generate moq -out mock/mongo.go -pkg mock . MongoDB
 
 // HTTPServer defines the required methods from the HTTP server
 type HTTPServer interface {
@@ -22,4 +23,10 @@ type HealthChecker interface {
 	Start(ctx context.Context)
 	Stop()
 	AddCheck(name string, checker healthcheck.Checker) (err error)
+}
+
+// MongoDB defines the required methods from MongoDB
+type MongoDB interface {
+	Close(context.Context) error
+	Checker(context.Context, *healthcheck.CheckState) error
 }
