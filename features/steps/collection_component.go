@@ -8,7 +8,6 @@ import (
 	"github.com/ONSdigital/dp-collection-api/service/mock"
 	"github.com/benweissmann/memongo"
 	"net/http"
-	"strconv"
 	"time"
 
 	componenttest "github.com/ONSdigital/dp-component-test"
@@ -44,7 +43,7 @@ func NewCollectionComponent(mongoFeature *componenttest.MongoFeature) (*Collecti
 
 	mongodb := &mongo.Mongo{
 		Database:              memongo.RandomDatabase(),
-		URI:                   "localhost:" + strconv.Itoa(mongoFeature.Server.Port()),
+		URI:                   mongoFeature.Server.URI(),
 		CollectionsCollection: c.Config.MongoConfig.CollectionsCollection,
 	}
 
