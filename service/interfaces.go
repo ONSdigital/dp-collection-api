@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/ONSdigital/dp-collection-api/api"
 	"net/http"
 
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -17,7 +18,7 @@ type HTTPServer interface {
 	Shutdown(ctx context.Context) error
 }
 
-// HealthChecker defines the required methods from Healthcheck
+// HealthChecker defines the required methods from Health check
 type HealthChecker interface {
 	Handler(w http.ResponseWriter, req *http.Request)
 	Start(ctx context.Context)
@@ -29,4 +30,5 @@ type HealthChecker interface {
 type MongoDB interface {
 	Close(context.Context) error
 	Checker(context.Context, *healthcheck.CheckState) error
+	api.CollectionStore
 }

@@ -3,9 +3,11 @@ package mongo
 import (
 	"context"
 	"errors"
+	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dpMongoDriver "github.com/ONSdigital/dp-mongodb"
 	dpMongoHealth "github.com/ONSdigital/dp-mongodb/health"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/globalsign/mgo"
 )
 
@@ -15,9 +17,6 @@ type Mongo struct {
 	Database              string
 	CollectionsCollection string
 	Session               *mgo.Session
-	Username              string
-	Password              string
-	CAFilePath            string
 	URI                   string
 }
 
@@ -31,7 +30,6 @@ func (m *Mongo) Init(ctx context.Context) error {
 	if m.Session, err = mgo.Dial(m.URI); err != nil {
 		return err
 	}
-
 	m.Session.EnsureSafe(&mgo.Safe{WMode: "majority"})
 	m.Session.SetMode(mgo.Strong, true)
 
@@ -60,4 +58,46 @@ func (m *Mongo) Close(ctx context.Context) error {
 // Checker is called by the health check library to check the health state of this mongoDB instance
 func (m *Mongo) Checker(ctx context.Context, state *healthcheck.CheckState) error {
 	return m.healthClient.Checker(ctx, state)
+}
+
+// GetCollections retrieves all collection documents
+func (m *Mongo) GetCollections(ctx context.Context, offset, limit int) (collections []models.Collection, totalCount int, err error) {
+
+	s := m.Session.Copy()
+	defer s.Close()
+
+	var q *mgo.Query
+
+	q = s.DB(m.Database).C(m.CollectionsCollection).Find(nil)
+
+	totalCount, err = q.Count()
+	if err != nil {
+		log.Error(ctx, "error getting count of collections from mongo db", err)
+		if err == mgo.ErrNotFound {
+			return []models.Collection{}, totalCount, nil
+		}
+		return nil, totalCount, err
+	}
+
+	var values []models.Collection
+
+	if limit > 0 {
+		iter := q.Skip(offset).Limit(limit).Iter()
+
+		defer func() {
+			err := iter.Close()
+			if err != nil {
+				log.Error(ctx, "error closing iterator", err)
+			}
+		}()
+
+		if err := iter.All(&values); err != nil {
+			if err == mgo.ErrNotFound {
+				return []models.Collection{}, totalCount, nil
+			}
+			return nil, totalCount, err
+		}
+	}
+
+	return values, totalCount, nil
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/ONSdigital/dp-collection-api/mongo"
+	"github.com/ONSdigital/dp-collection-api/pagination"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"net/http"
@@ -75,7 +76,9 @@ func New(ctx context.Context, cfg *config.Config, buildTime, gitCommit, version 
 	r.StrictSlash(true).Path("/health").HandlerFunc(healthCheck.Handler)
 	server := GetHTTPServer(cfg.BindAddr, r)
 
-	api := api.Setup(ctx, r)
+	paginator := pagination.NewPaginator(cfg.DefaultLimit, cfg.DefaultOffset, cfg.DefaultMaxLimit)
+
+	api := api.Setup(ctx, r, paginator, mongoDB)
 
 	return &Service{
 		cfg:         cfg,

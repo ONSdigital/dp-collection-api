@@ -1,7 +1,11 @@
-package api
+package api_test
 
 import (
 	"context"
+	"github.com/ONSdigital/dp-collection-api/api"
+	"github.com/ONSdigital/dp-collection-api/api/mock"
+	"github.com/ONSdigital/dp-collection-api/models"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -10,15 +14,26 @@ import (
 )
 
 func TestSetup(t *testing.T) {
+
+	paginator := &mock.PaginatorMock{
+		ReadPaginationParametersFunc: func(r *http.Request) (int, int, error) {
+			return 1, 0, nil
+		},
+	}
+
+	collectionStore := &mock.CollectionStoreMock{
+		GetCollectionsFunc: func(ctx context.Context, offset int, limit int) ([]models.Collection, int, error) {
+			return []models.Collection{}, 0, nil
+		},
+	}
+
 	Convey("Given an API instance", t, func() {
 		r := mux.NewRouter()
 		ctx := context.Background()
-		api := Setup(ctx, r)
+		api := api.Setup(ctx, r, paginator, collectionStore)
 
-		// TODO: remove hello world example handler route test case
 		Convey("When created the following routes should have been added", func() {
-			// Replace the check below with any newly added api endpoints
-			So(hasRoute(api.Router, "/hello", "GET"), ShouldBeTrue)
+			So(hasRoute(api.Router, "/collections", "GET"), ShouldBeTrue)
 		})
 	})
 }
