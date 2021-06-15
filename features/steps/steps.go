@@ -5,9 +5,6 @@ import (
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/cucumber/godog"
 	"github.com/globalsign/mgo/bson"
-	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"strings"
 	"time"
 )
 
@@ -15,7 +12,6 @@ func (c *CollectionComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	c.apiFeature.RegisterSteps(ctx)
 
 	ctx.Step(`^I have these collections:$`, c.iHaveTheseCollections)
-	ctx.Step(`^I should receive a hello-world response$`, c.iShouldReceiveAHelloworldResponse)
 }
 
 func (c *CollectionComponent) iHaveTheseCollections(input *godog.DocString) error {
@@ -50,13 +46,4 @@ func (c *CollectionComponent) putDocumentInDatabase(document interface{}, id, co
 		return err
 	}
 	return nil
-}
-
-func (c *CollectionComponent) iShouldReceiveAHelloworldResponse() error {
-	responseBody := c.apiFeature.HttpResponse.Body
-	body, _ := ioutil.ReadAll(responseBody)
-
-	assert.Equal(c, `{"message":"Hello, World!"}`, strings.TrimSpace(string(body)))
-
-	return c.StepError()
 }

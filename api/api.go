@@ -23,8 +23,6 @@ func Setup(ctx context.Context, r *mux.Router, paginator Paginator, collectionSt
 		collectionStore: collectionStore,
 	}
 
-	// TODO: remove hello world example handler route
-	r.HandleFunc("/hello", HelloHandler(ctx)).Methods("GET")
 	r.HandleFunc("/collections", api.GetCollectionsHandler).Methods(http.MethodGet)
 	return api
 }
