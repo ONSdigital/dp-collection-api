@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dpMongoDriver "github.com/ONSdigital/dp-mongodb"
@@ -61,7 +62,7 @@ func (m *Mongo) Checker(ctx context.Context, state *healthcheck.CheckState) erro
 }
 
 // GetCollections retrieves all collection documents
-func (m *Mongo) GetCollections(ctx context.Context, offset, limit int) (collections []models.Collection, totalCount int, err error) {
+func (m *Mongo) GetCollections(ctx context.Context, offset, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
 
 	s := m.Session.Copy()
 	defer s.Close()
@@ -70,7 +71,12 @@ func (m *Mongo) GetCollections(ctx context.Context, offset, limit int) (collecti
 
 	q = s.DB(m.Database).C(m.CollectionsCollection).Find(nil)
 
-	totalCount, err = q.Count()
+	switch orderBy {
+	case collections.OrderByPublishDate:
+		q.Sort("publish_date")
+	}
+
+	totalCount, err := q.Count()
 	if err != nil {
 		log.Error(ctx, "error getting count of collections from mongo db", err)
 		if err == mgo.ErrNotFound {

@@ -30,8 +30,6 @@ func Setup(ctx context.Context, r *mux.Router, paginator Paginator, collectionSt
 // WriteJSONBody marshals the provided interface into json, and writes it to the response body.
 func WriteJSONBody(ctx context.Context, v interface{}, w http.ResponseWriter, data log.Data) error {
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
 	body, err := json.Marshal(v)
 	if err != nil {
 		handleError(ctx, err, w, data)

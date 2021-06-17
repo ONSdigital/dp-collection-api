@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ONSdigital/dp-collection-api/api"
 	"github.com/ONSdigital/dp-collection-api/api/mock"
+	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"net/http"
 	"net/http/httptest"
@@ -22,7 +23,7 @@ func TestSetup(t *testing.T) {
 	}
 
 	collectionStore := &mock.CollectionStoreMock{
-		GetCollectionsFunc: func(ctx context.Context, offset int, limit int) ([]models.Collection, int, error) {
+		GetCollectionsFunc: func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
 			return []models.Collection{}, 0, nil
 		},
 	}

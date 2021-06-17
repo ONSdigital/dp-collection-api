@@ -6,6 +6,7 @@ package mock
 import (
 	"context"
 	"github.com/ONSdigital/dp-collection-api/api"
+	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"sync"
 )
@@ -20,7 +21,7 @@ var _ api.CollectionStore = &CollectionStoreMock{}
 //
 //         // make and configure a mocked api.CollectionStore
 //         mockedCollectionStore := &CollectionStoreMock{
-//             GetCollectionsFunc: func(ctx context.Context, offset int, limit int) ([]models.Collection, int, error) {
+//             GetCollectionsFunc: func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
 // 	               panic("mock out the GetCollections method")
 //             },
 //         }
@@ -31,7 +32,7 @@ var _ api.CollectionStore = &CollectionStoreMock{}
 //     }
 type CollectionStoreMock struct {
 	// GetCollectionsFunc mocks the GetCollections method.
-	GetCollectionsFunc func(ctx context.Context, offset int, limit int) ([]models.Collection, int, error)
+	GetCollectionsFunc func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -43,43 +44,49 @@ type CollectionStoreMock struct {
 			Offset int
 			// Limit is the limit argument value.
 			Limit int
+			// OrderBy is the orderBy argument value.
+			OrderBy collections.OrderBy
 		}
 	}
 	lockGetCollections sync.RWMutex
 }
 
 // GetCollections calls GetCollectionsFunc.
-func (mock *CollectionStoreMock) GetCollections(ctx context.Context, offset int, limit int) ([]models.Collection, int, error) {
+func (mock *CollectionStoreMock) GetCollections(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
 	if mock.GetCollectionsFunc == nil {
 		panic("CollectionStoreMock.GetCollectionsFunc: method is nil but CollectionStore.GetCollections was just called")
 	}
 	callInfo := struct {
-		Ctx    context.Context
-		Offset int
-		Limit  int
+		Ctx     context.Context
+		Offset  int
+		Limit   int
+		OrderBy collections.OrderBy
 	}{
-		Ctx:    ctx,
-		Offset: offset,
-		Limit:  limit,
+		Ctx:     ctx,
+		Offset:  offset,
+		Limit:   limit,
+		OrderBy: orderBy,
 	}
 	mock.lockGetCollections.Lock()
 	mock.calls.GetCollections = append(mock.calls.GetCollections, callInfo)
 	mock.lockGetCollections.Unlock()
-	return mock.GetCollectionsFunc(ctx, offset, limit)
+	return mock.GetCollectionsFunc(ctx, offset, limit, orderBy)
 }
 
 // GetCollectionsCalls gets all the calls that were made to GetCollections.
 // Check the length with:
 //     len(mockedCollectionStore.GetCollectionsCalls())
 func (mock *CollectionStoreMock) GetCollectionsCalls() []struct {
-	Ctx    context.Context
-	Offset int
-	Limit  int
+	Ctx     context.Context
+	Offset  int
+	Limit   int
+	OrderBy collections.OrderBy
 } {
 	var calls []struct {
-		Ctx    context.Context
-		Offset int
-		Limit  int
+		Ctx     context.Context
+		Offset  int
+		Limit   int
+		OrderBy collections.OrderBy
 	}
 	mock.lockGetCollections.RLock()
 	calls = mock.calls.GetCollections

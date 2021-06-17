@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"github.com/ONSdigital/dp-collection-api/collections"
+	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-collection-api/pagination"
 	"github.com/ONSdigital/log.go/v2/log"
 	"net/http"
@@ -14,10 +16,11 @@ var (
 		pagination.ErrInvalidLimitParameter:  true,
 		pagination.ErrInvalidOffsetParameter: true,
 		pagination.ErrLimitOverMax:           true,
+		collections.ErrInvalidOrderBy:        true,
 	}
 )
 
-func handleError(ctx context.Context, err error, w http.ResponseWriter, data log.Data) {
+func handleError(ctx context.Context, err error, w http.ResponseWriter, logData log.Data) {
 	var status int
 	switch {
 
@@ -27,10 +30,20 @@ func handleError(ctx context.Context, err error, w http.ResponseWriter, data log
 		status = http.StatusInternalServerError
 	}
 
-	if data == nil {
-		data = log.Data{}
+	if logData == nil {
+		logData = log.Data{}
 	}
 
-	log.Error(ctx, "request unsuccessful", err, data)
-	http.Error(w, err.Error(), status)
+	response := models.ErrorsResponse{
+		Errors: []models.ErrorResponse{
+			{
+				Message: err.Error(),
+			},
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	WriteJSONBody(ctx, response, w, logData)
+	log.Error(ctx, "request unsuccessful", err, logData)
 }
