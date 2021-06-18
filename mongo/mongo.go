@@ -10,6 +10,7 @@ import (
 	dpMongoHealth "github.com/ONSdigital/dp-mongodb/health"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 )
 
 // Mongo represents a simplistic MongoDB configuration.
@@ -62,16 +63,21 @@ func (m *Mongo) Checker(ctx context.Context, state *healthcheck.CheckState) erro
 }
 
 // GetCollections retrieves all collection documents
-func (m *Mongo) GetCollections(ctx context.Context, offset, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
+func (m *Mongo) GetCollections(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 
 	s := m.Session.Copy()
 	defer s.Close()
 
 	var q *mgo.Query
+	var query interface{}
 
-	q = s.DB(m.Database).C(m.CollectionsCollection).Find(nil)
+	if len(queryParams.NameSearch) > 0 {
+		query = bson.M{"name": &bson.RegEx{Pattern: queryParams.NameSearch, Options: "i"}}
+	}
 
-	switch orderBy {
+	q = s.DB(m.Database).C(m.CollectionsCollection).Find(query)
+
+	switch queryParams.OrderBy {
 	case collections.OrderByPublishDate:
 		q.Sort("publish_date")
 	}
@@ -87,8 +93,8 @@ func (m *Mongo) GetCollections(ctx context.Context, offset, limit int, orderBy c
 
 	var values []models.Collection
 
-	if limit > 0 {
-		iter := q.Skip(offset).Limit(limit).Iter()
+	if queryParams.Limit > 0 {
+		iter := q.Skip(queryParams.Offset).Limit(queryParams.Limit).Iter()
 
 		defer func() {
 			err := iter.Close()

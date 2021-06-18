@@ -20,30 +20,18 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestGetCollections(t *testing.T) {
+var (
+	offset     = 0
+	limit      = 1
+	totalCount = 3
+)
 
-	offset := 0
-	limit := 1
-	totalCount := 3
+func TestGetCollections(t *testing.T) {
 
 	Convey("Given a request to GET collections", t, func() {
 
-		paginator := &mock.PaginatorMock{
-			ReadPaginationParametersFunc: func(r *http.Request) (int, int, error) {
-				return offset, limit, nil
-			},
-		}
-
-		collectionStore := &mock.CollectionStoreMock{
-			GetCollectionsFunc: func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
-				return []models.Collection{{
-					ID:          "123",
-					Name:        "collection 1",
-					PublishDate: time.Time{},
-					LastUpdated: time.Time{},
-				}}, totalCount, nil
-			},
-		}
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
 
 		r := httptest.NewRequest("GET", "http://localhost:26000/collections", nil)
 		w := httptest.NewRecorder()
@@ -61,9 +49,10 @@ func TestGetCollections(t *testing.T) {
 			Convey("Then the collection store is called to get collection data", func() {
 				So(len(collectionStore.GetCollectionsCalls()), ShouldEqual, 1)
 				getCollectionsCall := collectionStore.GetCollectionsCalls()[0]
-				So(getCollectionsCall.Limit, ShouldEqual, limit)
-				So(getCollectionsCall.Offset, ShouldEqual, offset)
-				So(getCollectionsCall.OrderBy, ShouldEqual, collections.OrderByDefault)
+				So(getCollectionsCall.QueryParams.Limit, ShouldEqual, limit)
+				So(getCollectionsCall.QueryParams.Offset, ShouldEqual, offset)
+				So(getCollectionsCall.QueryParams.OrderBy, ShouldEqual, collections.OrderByDefault)
+				So(getCollectionsCall.QueryParams.NameSearch, ShouldEqual, "")
 			})
 
 			Convey("Then the response has the expected status code", func() {
@@ -88,28 +77,10 @@ func TestGetCollections(t *testing.T) {
 
 func TestGetCollections_orderByPublishDate(t *testing.T) {
 
-	offset := 0
-	limit := 1
-	totalCount := 3
-
 	Convey("Given a request to GET collections", t, func() {
 
-		paginator := &mock.PaginatorMock{
-			ReadPaginationParametersFunc: func(r *http.Request) (int, int, error) {
-				return offset, limit, nil
-			},
-		}
-
-		collectionStore := &mock.CollectionStoreMock{
-			GetCollectionsFunc: func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
-				return []models.Collection{{
-					ID:          "123",
-					Name:        "collection 1",
-					PublishDate: time.Time{},
-					LastUpdated: time.Time{},
-				}}, totalCount, nil
-			},
-		}
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
 
 		r := httptest.NewRequest("GET", "http://localhost:26000/collections?order_by=publish_date", nil)
 		w := httptest.NewRecorder()
@@ -122,9 +93,69 @@ func TestGetCollections_orderByPublishDate(t *testing.T) {
 			Convey("Then the collection store is called with the expected orderBy value", func() {
 				So(len(collectionStore.GetCollectionsCalls()), ShouldEqual, 1)
 				getCollectionsCall := collectionStore.GetCollectionsCalls()[0]
-				So(getCollectionsCall.Limit, ShouldEqual, limit)
-				So(getCollectionsCall.Offset, ShouldEqual, offset)
-				So(getCollectionsCall.OrderBy, ShouldEqual, collections.OrderByPublishDate)
+				So(getCollectionsCall.QueryParams.Limit, ShouldEqual, limit)
+				So(getCollectionsCall.QueryParams.Offset, ShouldEqual, offset)
+				So(getCollectionsCall.QueryParams.OrderBy, ShouldEqual, collections.OrderByPublishDate)
+				So(getCollectionsCall.QueryParams.NameSearch, ShouldEqual, "")
+			})
+		})
+	})
+}
+
+func TestGetCollections_nameSearch(t *testing.T) {
+
+	Convey("Given a request to GET collections with a name search value", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+
+		r := httptest.NewRequest("GET", "http://localhost:26000/collections?name=LMSV3", nil)
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+			api.GetCollectionsHandler(w, r)
+
+			Convey("Then the collection store is called with the expected orderBy value", func() {
+				So(len(collectionStore.GetCollectionsCalls()), ShouldEqual, 1)
+				getCollectionsCall := collectionStore.GetCollectionsCalls()[0]
+				So(getCollectionsCall.QueryParams.Limit, ShouldEqual, limit)
+				So(getCollectionsCall.QueryParams.Offset, ShouldEqual, offset)
+				So(getCollectionsCall.QueryParams.OrderBy, ShouldEqual, collections.OrderByDefault)
+				So(getCollectionsCall.QueryParams.NameSearch, ShouldEqual, "LMSV3")
+			})
+		})
+	})
+}
+
+func TestGetCollections_nameSearchTooLong(t *testing.T) {
+
+	Convey("Given a request to GET collections with an empty order_by value", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+
+		r := httptest.NewRequest("GET", "http://localhost:26000/collections?name=1234567890123456789012345678901234567890123456789012345678901234567890", nil)
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+			api.GetCollectionsHandler(w, r)
+
+			Convey("Then the expected error code is returned", func() {
+				So(w.Code, ShouldEqual, http.StatusBadRequest)
+			})
+
+			Convey("Then the response body should contain the expected error response", func() {
+				body, err := ioutil.ReadAll(w.Body)
+				So(err, ShouldBeNil)
+				response := models.ErrorsResponse{}
+				err = json.Unmarshal(body, &response)
+				So(err, ShouldBeNil)
+				So(len(response.Errors), ShouldEqual, 1)
+				So(response.Errors[0].Message, ShouldEqual, collections.ErrNameSearchTooLong.Error())
 			})
 		})
 	})
@@ -132,28 +163,10 @@ func TestGetCollections_orderByPublishDate(t *testing.T) {
 
 func TestGetCollections_emptyOrderBy(t *testing.T) {
 
-	offset := 0
-	limit := 1
-	totalCount := 3
-
 	Convey("Given a request to GET collections with an empty order_by value", t, func() {
 
-		paginator := &mock.PaginatorMock{
-			ReadPaginationParametersFunc: func(r *http.Request) (int, int, error) {
-				return offset, limit, nil
-			},
-		}
-
-		collectionStore := &mock.CollectionStoreMock{
-			GetCollectionsFunc: func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
-				return []models.Collection{{
-					ID:          "123",
-					Name:        "collection 1",
-					PublishDate: time.Time{},
-					LastUpdated: time.Time{},
-				}}, totalCount, nil
-			},
-		}
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
 
 		r := httptest.NewRequest("GET", "http://localhost:26000/collections?order_by=", nil)
 		w := httptest.NewRecorder()
@@ -166,7 +179,7 @@ func TestGetCollections_emptyOrderBy(t *testing.T) {
 			Convey("Then the collection store is called with the expected orderBy value", func() {
 				So(len(collectionStore.GetCollectionsCalls()), ShouldEqual, 1)
 				getCollectionsCall := collectionStore.GetCollectionsCalls()[0]
-				So(getCollectionsCall.OrderBy, ShouldEqual, collections.OrderByDefault)
+				So(getCollectionsCall.QueryParams.OrderBy, ShouldEqual, collections.OrderByDefault)
 			})
 		})
 	})
@@ -181,7 +194,6 @@ func TestGetCollections_paginationError(t *testing.T) {
 				return 1, 0, pagination.ErrInvalidLimitParameter
 			},
 		}
-
 		collectionStore := &mock.CollectionStoreMock{}
 
 		Convey("When the request is made to GET collections", func() {
@@ -208,14 +220,9 @@ func TestGetCollections_collectionStoreError(t *testing.T) {
 
 	Convey("Given a collection store that returns an error", t, func() {
 
-		paginator := &mock.PaginatorMock{
-			ReadPaginationParametersFunc: func(r *http.Request) (int, int, error) {
-				return 0, 0, nil
-			},
-		}
-
+		paginator := mockPaginator()
 		collectionStore := &mock.CollectionStoreMock{
-			GetCollectionsFunc: func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
+			GetCollectionsFunc: func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 				return nil, 0, errors.New("store error")
 			},
 		}
@@ -244,17 +251,8 @@ func TestGetCollections_invalidOrderByError(t *testing.T) {
 
 	Convey("Given an invalid orderBy value", t, func() {
 
-		paginator := &mock.PaginatorMock{
-			ReadPaginationParametersFunc: func(r *http.Request) (int, int, error) {
-				return 0, 0, nil
-			},
-		}
-
-		collectionStore := &mock.CollectionStoreMock{
-			GetCollectionsFunc: func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
-				return nil, 0, errors.New("store error")
-			},
-		}
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
 
 		Convey("When the request is made to GET collections", func() {
 
@@ -295,7 +293,6 @@ func TestGetCollections_internalError(t *testing.T) {
 				return 1, 0, errors.New("unrecognised error")
 			},
 		}
-
 		collectionStore := &mock.CollectionStoreMock{}
 
 		Convey("When the request is made to GET collections", func() {
@@ -316,4 +313,30 @@ func TestGetCollections_internalError(t *testing.T) {
 			})
 		})
 	})
+}
+
+func mockPaginator() *mock.PaginatorMock {
+
+	paginator := &mock.PaginatorMock{
+		ReadPaginationParametersFunc: func(r *http.Request) (int, int, error) {
+			return offset, limit, nil
+		},
+	}
+	return paginator
+}
+
+func mockCollectionStore() *mock.CollectionStoreMock {
+
+	collectionStore := &mock.CollectionStoreMock{
+		GetCollectionsFunc: func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
+			return []models.Collection{{
+				ID:          "123",
+				Name:        "collection 1",
+				PublishDate: time.Time{},
+				LastUpdated: time.Time{},
+			}}, totalCount, nil
+		},
+	}
+
+	return collectionStore
 }

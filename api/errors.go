@@ -16,6 +16,7 @@ var (
 		pagination.ErrInvalidOffsetParameter: true,
 		pagination.ErrLimitOverMax:           true,
 		collections.ErrInvalidOrderBy:        true,
+		collections.ErrNameSearchTooLong:     true,
 	}
 )
 

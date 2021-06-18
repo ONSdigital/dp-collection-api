@@ -23,7 +23,7 @@ func TestSetup(t *testing.T) {
 	}
 
 	collectionStore := &mock.CollectionStoreMock{
-		GetCollectionsFunc: func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
+		GetCollectionsFunc: func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 			return []models.Collection{}, 0, nil
 		},
 	}

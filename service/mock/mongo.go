@@ -28,7 +28,7 @@ var _ service.MongoDB = &MongoDBMock{}
 //             CloseFunc: func(in1 context.Context) error {
 // 	               panic("mock out the Close method")
 //             },
-//             GetCollectionsFunc: func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
+//             GetCollectionsFunc: func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 // 	               panic("mock out the GetCollections method")
 //             },
 //         }
@@ -45,7 +45,7 @@ type MongoDBMock struct {
 	CloseFunc func(in1 context.Context) error
 
 	// GetCollectionsFunc mocks the GetCollections method.
-	GetCollectionsFunc func(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error)
+	GetCollectionsFunc func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -65,12 +65,8 @@ type MongoDBMock struct {
 		GetCollections []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// Offset is the offset argument value.
-			Offset int
-			// Limit is the limit argument value.
-			Limit int
-			// OrderBy is the orderBy argument value.
-			OrderBy collections.OrderBy
+			// QueryParams is the queryParams argument value.
+			QueryParams collections.QueryParams
 		}
 	}
 	lockChecker        sync.RWMutex
@@ -145,41 +141,33 @@ func (mock *MongoDBMock) CloseCalls() []struct {
 }
 
 // GetCollections calls GetCollectionsFunc.
-func (mock *MongoDBMock) GetCollections(ctx context.Context, offset int, limit int, orderBy collections.OrderBy) ([]models.Collection, int, error) {
+func (mock *MongoDBMock) GetCollections(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 	if mock.GetCollectionsFunc == nil {
 		panic("MongoDBMock.GetCollectionsFunc: method is nil but MongoDB.GetCollections was just called")
 	}
 	callInfo := struct {
-		Ctx     context.Context
-		Offset  int
-		Limit   int
-		OrderBy collections.OrderBy
+		Ctx         context.Context
+		QueryParams collections.QueryParams
 	}{
-		Ctx:     ctx,
-		Offset:  offset,
-		Limit:   limit,
-		OrderBy: orderBy,
+		Ctx:         ctx,
+		QueryParams: queryParams,
 	}
 	mock.lockGetCollections.Lock()
 	mock.calls.GetCollections = append(mock.calls.GetCollections, callInfo)
 	mock.lockGetCollections.Unlock()
-	return mock.GetCollectionsFunc(ctx, offset, limit, orderBy)
+	return mock.GetCollectionsFunc(ctx, queryParams)
 }
 
 // GetCollectionsCalls gets all the calls that were made to GetCollections.
 // Check the length with:
 //     len(mockedMongoDB.GetCollectionsCalls())
 func (mock *MongoDBMock) GetCollectionsCalls() []struct {
-	Ctx     context.Context
-	Offset  int
-	Limit   int
-	OrderBy collections.OrderBy
+	Ctx         context.Context
+	QueryParams collections.QueryParams
 } {
 	var calls []struct {
-		Ctx     context.Context
-		Offset  int
-		Limit   int
-		OrderBy collections.OrderBy
+		Ctx         context.Context
+		QueryParams collections.QueryParams
 	}
 	mock.lockGetCollections.RLock()
 	calls = mock.calls.GetCollections
