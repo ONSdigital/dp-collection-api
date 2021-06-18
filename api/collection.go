@@ -15,6 +15,7 @@ var collectionsOrderBy = map[string]collections.OrderBy{
 	"publish_date": collections.OrderByPublishDate,
 }
 
+// GetCollectionsHandler handles HTTP requests for the get collections endpoint
 func (api *API) GetCollectionsHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	logData := log.Data{}

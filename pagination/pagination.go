@@ -7,17 +7,24 @@ import (
 )
 
 var (
+	// ErrInvalidOffsetParameter represents an error case where an invalid offset value is provided
 	ErrInvalidOffsetParameter = errors.New("invalid offset query parameter")
-	ErrInvalidLimitParameter  = errors.New("invalid limit query parameter")
-	ErrLimitOverMax           = errors.New("limit query parameter is larger than the maximum allowed")
+
+	// ErrInvalidLimitParameter represents an error case where an invalid limit value is provided
+	ErrInvalidLimitParameter = errors.New("invalid limit query parameter")
+
+	// ErrLimitOverMax represents an error case where the given limit value is larger than the maximum allowed
+	ErrLimitOverMax = errors.New("limit query parameter is larger than the maximum allowed")
 )
 
+// Paginator is a type to hold pagination related defaults, and provides helper functions using the defaults if needed
 type Paginator struct {
 	DefaultLimit    int
 	DefaultOffset   int
 	DefaultMaxLimit int
 }
 
+// PaginatedResponse represents the pagination related values that go into list based response
 type PaginatedResponse struct {
 	Count      int `json:"count"`
 	Offset     int `json:"offset"`
@@ -25,6 +32,7 @@ type PaginatedResponse struct {
 	TotalCount int `json:"total_count"`
 }
 
+// NewPaginator creates a new instance
 func NewPaginator(defaultLimit, defaultOffset, defaultMaxLimit int) *Paginator {
 	return &Paginator{
 		DefaultLimit:    defaultLimit,
@@ -33,6 +41,7 @@ func NewPaginator(defaultLimit, defaultOffset, defaultMaxLimit int) *Paginator {
 	}
 }
 
+// ReadPaginationParameters returns pagination related values based on the given request
 func (p *Paginator) ReadPaginationParameters(r *http.Request) (offset int, limit int, err error) {
 
 	offsetParameter := r.URL.Query().Get("offset")

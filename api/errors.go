@@ -10,7 +10,6 @@ import (
 )
 
 var (
-
 	// errors that should return a 400 status
 	badRequest = map[error]bool{
 		pagination.ErrInvalidLimitParameter:  true,
