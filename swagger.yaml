@@ -47,8 +47,9 @@ parameters:
     required: false
     type: string
     enum:
-      - date
-    default: date
+      - publish_date
+      - name
+    default: publish_date
 paths:
   /collections:
     get:
