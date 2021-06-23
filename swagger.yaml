@@ -9,6 +9,7 @@ info:
 basePath: "/v1"
 schemes:
   - http
+tags: collection
 parameters:
   collection_id:
     name: collection_id

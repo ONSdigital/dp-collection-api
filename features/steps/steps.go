@@ -1,23 +1,49 @@
 package steps
 
 import (
+	"encoding/json"
+	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/cucumber/godog"
-	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"strings"
+	"github.com/globalsign/mgo/bson"
+	"time"
 )
 
-func (c *Component) RegisterSteps(ctx *godog.ScenarioContext) {
+func (c *CollectionComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	c.apiFeature.RegisterSteps(ctx)
 
-	ctx.Step(`^I should receive a hello-world response$`, c.iShouldReceiveAHelloworldResponse)
+	ctx.Step(`^I have these collections:$`, c.iHaveTheseCollections)
 }
 
-func (c *Component) iShouldReceiveAHelloworldResponse() error {
-	responseBody := c.apiFeature.HttpResponse.Body
-	body, _ := ioutil.ReadAll(responseBody)
+func (c *CollectionComponent) iHaveTheseCollections(input *godog.DocString) error {
+	var collections []models.Collection
 
-	assert.Equal(c, `{"message":"Hello, World!"}`, strings.TrimSpace(string(body)))
+	err := json.Unmarshal([]byte(input.Content), &collections)
+	if err != nil {
+		return err
+	}
 
-	return c.StepError()
+	for _, collection := range collections {
+		if err := c.putDocumentInDatabase(collection, collection.ID, c.config.MongoConfig.CollectionsCollection); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *CollectionComponent) putDocumentInDatabase(document interface{}, id, collectionName string) error {
+	s := c.mongoClient.Session.Copy()
+	defer s.Close()
+
+	update := bson.M{
+		"$set": document,
+		"$setOnInsert": bson.M{
+			"last_updated": time.Now(),
+		},
+	}
+	_, err := s.DB(c.mongoClient.Database).C(collectionName).UpsertId(id, update)
+	if err != nil {
+		return err
+	}
+	return nil
 }
