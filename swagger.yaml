@@ -108,6 +108,26 @@ paths:
           $ref: '#/responses/InternalError'
     post:
       summary: "Creates a new collection"
+      parameters:
+        - name: name
+          in: body
+          schema:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                description: "Name of the collection"
+                type: string
+              type:
+                description: "Way in which collection will be published"
+                type: string
+                enum: [manual, scheduled]
+              publish_date:
+                description: "Date when the collection should be published"
+                type: string
+                format: date
+                default: ???
       responses:
         201:
           description: "Successfully added a collection"
