@@ -119,6 +119,7 @@ paths:
               name:
                 description: "Name of the collection"
                 type: string
+                example: "Coronavirus key indicators"
               type:
                 description: "Way in which collection will be published"
                 type: string
