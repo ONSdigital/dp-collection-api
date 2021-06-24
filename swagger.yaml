@@ -50,6 +50,21 @@ parameters:
       - name
     default: publish_date
 paths:
+  /health:
+    get:
+      summary: "Returns API's health status"
+      description: "Returns health status of the API and checks on dependent services"
+      produces:
+        - application/json
+      responses:
+        200:
+          description: "Successfully returns OK status with checks of dependent services"
+          schema:
+            $ref: "#/definitions/Health"
+        429:
+          description: "Services warming up or degraded (at least one check in WARNING or CRITICAL status)"
+        500:
+          $ref: "#/responses/InternalError"
   /collections:
     get:
       summary: Get a list of collections
@@ -100,11 +115,11 @@ paths:
           $ref: '#/responses/InternalError'
   /collections/{collection_id}/events:
     get:
-      summary: "Gets an even for a collection"
+      summary: "Gets events for a collection"
       parameters:
         - $ref: '#/parameters/collection_id'
       responses:
-        201:
+        200:
           description: "Successfully retrieved an event for a collection"
         500:
           $ref: '#/responses/InternalError'
@@ -137,8 +152,77 @@ definitions:
         type: string
         example: "LMSV1"
       publishing_date:
-        description: "Date when the collection was/will be published"
+        description: "UTC timestamp indicating when the collection was/will be published"
         type: string
         format: date-time
         example: "2020-04-26T08:05:52Z"
         default: "to be determined"
+  Health:
+    type: object
+    properties:
+      status:
+        type: string
+        description: "The status of the API"
+        enum: ["OK", "WARNING", "CRITICAL"]
+      version:
+        type: object
+        properties:
+          build_time:
+            type: string
+            description: "The build date and time of the API"
+            example: "2020-06-11T12:49:20+01:00"
+          git_commit:
+            type: string
+            description: "The git commit hash of the API"
+            example: "7c2febbf2b818175112478d4ffbadbee1b654f63"
+          language:
+            type: string
+            description: "The programming language used to implement API"
+            example: "go"
+          language_version:
+            type: string
+            description: "The version of the programming language used to implement API"
+            example: "go1.14.3"
+          version:
+            type: string
+            description: "The version of API"
+            example: "1.0.0"
+      uptime:
+        type: string
+        description: "The uptime of API"
+        example: "34516"
+      start_time:
+        type: string
+        description: "The start date and time of API running"
+        example: "2020-06-11T11:49:21.520922Z"
+      checks:
+        type: array
+        items:
+          $ref: '#/definitions/HealthChecker'
+  HealthChecker:
+    type: object
+    properties:
+      name:
+        type: string
+        description: "The name of external service used by API"
+        enum: ["mongodb"]
+      status:
+        type: string
+        description: "The status of the external service"
+        enum: ["OK", "WARNING", "CRITICAL"]
+      message:
+        type: string
+        description: "The message status of the external service"
+        example: "mongodb is OK"
+      last_checked:
+        type: string
+        description: "The last health check date and time of the external service"
+        example: "2020-06-11T11:49:50.330089Z"
+      last_success:
+        type: string
+        description: "The last successful health check date and time of the external service"
+        example: "2020-06-11T11:49:50.330089Z"
+      last_failure:
+        type: string
+        description: "The last failed health check date and time of the external service"
+        example: null
