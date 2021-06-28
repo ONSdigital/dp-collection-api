@@ -2,6 +2,7 @@ package steps
 
 import (
 	"context"
+	"fmt"
 	"github.com/ONSdigital/dp-collection-api/config"
 	"github.com/ONSdigital/dp-collection-api/mongo"
 	"github.com/ONSdigital/dp-collection-api/service"
@@ -42,13 +43,14 @@ func NewCollectionComponent(mongoFeature *componenttest.MongoFeature) (*Collecti
 
 	c.apiFeature = componenttest.NewAPIFeature(c.InitialiseService)
 
+	mongoURI := fmt.Sprintf("localhost:%d", mongoFeature.Server.Port())
 	c.mongoClient = &mongo.Mongo{
 		Database:              memongo.RandomDatabase(),
-		URI:                   mongoFeature.Server.URI(),
+		URI:                   mongoURI,
 		CollectionsCollection: c.config.MongoConfig.CollectionsCollection,
 	}
 
-	if err := c.mongoClient.Init(context.TODO()); err != nil {
+	if err := c.mongoClient.Init(); err != nil {
 		return nil, err
 	}
 

@@ -31,9 +31,12 @@ var GetMongoDB = func(ctx context.Context, cfg config.MongoConfig) (MongoDB, err
 	mongodb := &mongo.Mongo{
 		CollectionsCollection: cfg.CollectionsCollection,
 		Database:              cfg.CollectionsDatabase,
+		Username:              cfg.Username,
+		Password:              cfg.Password,
+		IsSSL:                 cfg.IsSSL,
 		URI:                   cfg.BindAddr,
 	}
-	err := mongodb.Init(ctx)
+	err := mongodb.Init()
 	if err != nil {
 		return nil, err
 	}

@@ -22,6 +22,9 @@ type MongoConfig struct {
 	BindAddr              string `envconfig:"MONGODB_BIND_ADDR"           json:"-"` // This line contains sensitive data and the json:"-" tells the json marshaller to skip serialising it.
 	CollectionsDatabase   string `envconfig:"MONGODB_COLLECTIONS_DATABASE"`
 	CollectionsCollection string `envconfig:"MONGODB_COLLECTIONS_COLLECTION"`
+	Username              string `envconfig:"MONGODB_USERNAME"    json:"-"`
+	Password              string `envconfig:"MONGODB_PASSWORD"    json:"-"`
+	IsSSL                 bool   `envconfig:"MONGODB_IS_SSL"`
 }
 
 var cfg *Config
@@ -45,6 +48,9 @@ func Get() (*Config, error) {
 			BindAddr:              "localhost:27017",
 			CollectionsDatabase:   "collections",
 			CollectionsCollection: "collections",
+			Username:              "test",
+			Password:              "test",
+			IsSSL:                 false,
 		},
 	}
 

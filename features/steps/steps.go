@@ -1,10 +1,11 @@
 package steps
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/cucumber/godog"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 	"time"
 )
 
@@ -23,7 +24,7 @@ func (c *CollectionComponent) iHaveTheseCollections(input *godog.DocString) erro
 	}
 
 	for _, collection := range collections {
-		if err := c.putDocumentInDatabase(collection, collection.ID, c.config.MongoConfig.CollectionsCollection); err != nil {
+		if err := c.putDocumentInDatabase(collection, collection.ID); err != nil {
 			return err
 		}
 	}
@@ -31,9 +32,7 @@ func (c *CollectionComponent) iHaveTheseCollections(input *godog.DocString) erro
 	return nil
 }
 
-func (c *CollectionComponent) putDocumentInDatabase(document interface{}, id, collectionName string) error {
-	s := c.mongoClient.Session.Copy()
-	defer s.Close()
+func (c *CollectionComponent) putDocumentInDatabase(document interface{}, id string) error {
 
 	update := bson.M{
 		"$set": document,
@@ -41,7 +40,7 @@ func (c *CollectionComponent) putDocumentInDatabase(document interface{}, id, co
 			"last_updated": time.Now(),
 		},
 	}
-	_, err := s.DB(c.mongoClient.Database).C(collectionName).UpsertId(id, update)
+	_, err := c.mongoClient.Connection.GetConfiguredCollection().UpsertId(context.Background(), id, update)
 	if err != nil {
 		return err
 	}

@@ -6,11 +6,16 @@ import (
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dpMongoDriver "github.com/ONSdigital/dp-mongodb"
-	dpMongoHealth "github.com/ONSdigital/dp-mongodb/health"
+	dpMongoHealth "github.com/ONSdigital/dp-mongodb/v2/pkg/health"
+	dpMongoDriver "github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	"github.com/ONSdigital/log.go/v2/log"
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+const (
+	connectTimeoutInSeconds = 5
+	queryTimeoutInSeconds   = 15
 )
 
 // Mongo represents a simplistic MongoDB configuration.
@@ -18,28 +23,44 @@ type Mongo struct {
 	healthClient          *dpMongoHealth.CheckMongoClient
 	Database              string
 	CollectionsCollection string
-	Session               *mgo.Session
+	Connection            *dpMongoDriver.MongoConnection
+	Username              string
+	Password              string
 	URI                   string
+	IsSSL                 bool
+}
+
+func (m *Mongo) getConnectionConfig() *dpMongoDriver.MongoConnectionConfig {
+	return &dpMongoDriver.MongoConnectionConfig{
+		ConnectTimeoutInSeconds:       connectTimeoutInSeconds,
+		QueryTimeoutInSeconds:         queryTimeoutInSeconds,
+		Username:                      m.Username,
+		Password:                      m.Password,
+		ClusterEndpoint:               m.URI,
+		Database:                      m.Database,
+		Collection:                    m.CollectionsCollection,
+		IsSSL:                         m.IsSSL,
+		IsWriteConcernMajorityEnabled: false,
+		IsStrongReadConcernEnabled:    false,
+	}
 }
 
 // Init creates a new mongoConnection with a strong consistency and a write mode of "majority".
-func (m *Mongo) Init(ctx context.Context) error {
-	if m.Session != nil {
-		return errors.New("session already exists")
+func (m *Mongo) Init() error {
+	if m.Connection != nil {
+		return errors.New("datastore connection already exists")
 	}
 
-	var err error
-	if m.Session, err = mgo.Dial(m.URI); err != nil {
+	mongoConnection, err := dpMongoDriver.Open(m.getConnectionConfig())
+	if err != nil {
 		return err
 	}
-	m.Session.EnsureSafe(&mgo.Safe{WMode: "majority"})
-	m.Session.SetMode(mgo.Strong, true)
-
+	m.Connection = mongoConnection
 	databaseCollectionBuilder := make(map[dpMongoHealth.Database][]dpMongoHealth.Collection)
 	databaseCollectionBuilder[(dpMongoHealth.Database)(m.Database)] = []dpMongoHealth.Collection{(dpMongoHealth.Collection)(m.CollectionsCollection)}
 
 	// Create client and health client from session AND collections
-	client := dpMongoHealth.NewClientWithCollections(m.Session, databaseCollectionBuilder)
+	client := dpMongoHealth.NewClientWithCollections(mongoConnection, databaseCollectionBuilder)
 
 	m.healthClient = &dpMongoHealth.CheckMongoClient{
 		Client:      *client,
@@ -51,10 +72,10 @@ func (m *Mongo) Init(ctx context.Context) error {
 
 // Close closes the mongo session and returns any error
 func (m *Mongo) Close(ctx context.Context) error {
-	if m.Session == nil {
-		return errors.New("cannot close a mongoDB connection without a valid session")
+	if m.Connection == nil {
+		return errors.New("cannot close a empty connection")
 	}
-	return dpMongoDriver.Close(ctx, m.Session)
+	return m.Connection.Close(ctx)
 }
 
 // Checker is called by the health check library to check the health state of this mongoDB instance
@@ -65,27 +86,26 @@ func (m *Mongo) Checker(ctx context.Context, state *healthcheck.CheckState) erro
 // GetCollections retrieves all collection documents
 func (m *Mongo) GetCollections(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 
-	s := m.Session.Copy()
-	defer s.Close()
-
-	var q *mgo.Query
-	var query interface{}
+	var q *dpMongoDriver.Find
+	query := bson.D{}
 
 	if len(queryParams.NameSearch) > 0 {
-		query = bson.M{"name": &bson.RegEx{Pattern: queryParams.NameSearch, Options: "i"}}
+		query = bson.D{{"name", primitive.Regex{Pattern: queryParams.NameSearch, Options: "i"}}}
 	}
 
-	q = s.DB(m.Database).C(m.CollectionsCollection).Find(query)
+	q = m.Connection.
+		GetConfiguredCollection().
+		Find(query)
 
 	switch queryParams.OrderBy {
 	case collections.OrderByPublishDate:
-		q.Sort("publish_date")
+		q.Sort(bson.D{{"publish_date", 1}})
 	}
 
-	totalCount, err := q.Count()
+	totalCount, err := q.Count(ctx)
 	if err != nil {
 		log.Error(ctx, "error getting count of collections from mongo db", err)
-		if err == mgo.ErrNotFound {
+		if dpMongoDriver.IsErrNoDocumentFound(err) {
 			return []models.Collection{}, totalCount, nil
 		}
 		return nil, totalCount, err
@@ -94,17 +114,9 @@ func (m *Mongo) GetCollections(ctx context.Context, queryParams collections.Quer
 	var values []models.Collection
 
 	if queryParams.Limit > 0 {
-		iter := q.Skip(queryParams.Offset).Limit(queryParams.Limit).Iter()
-
-		defer func() {
-			err := iter.Close()
-			if err != nil {
-				log.Error(ctx, "error closing iterator", err)
-			}
-		}()
-
-		if err := iter.All(&values); err != nil {
-			if err == mgo.ErrNotFound {
+		err = q.Skip(queryParams.Offset).Limit(queryParams.Limit).IterAll(ctx, &values)
+		if err != nil {
+			if dpMongoDriver.IsErrNoDocumentFound(err) {
 				return []models.Collection{}, totalCount, nil
 			}
 			return nil, totalCount, err
