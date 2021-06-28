@@ -9,10 +9,241 @@ info:
 basePath: "/v1"
 schemes:
   - http
-tags:
+parameters:
+  collection_id:
+    name: collection_id
+    in: path
+    required: true
+    type: string
+  limit:
+    name: limit
+    description: "Maximum number of items that will be returned. A value of zero will return zero items."
+    in: query
+    required: false
+    type: integer
+    default: 20
+    maximum: 1000
+    minimum: 0
+  offset:
+    name: offset
+    description: "Starting index of the items array that will be returned. A value of zero indicates starting from the beginning"
+    in: query
+    required: false
+    type: integer
+    default: 0
+    minimum: 0
+  name:
+    name: name
+    description: "A substring that matches the names of the items returned"
+    in: query
+    required: false
+    type: string
+    maxLength: 80
+  order_by:
+    name: order_by
+    description: "The parameter which determines the order of the items returned"
+    in: query
+    required: false
+    type: string
+    enum:
+      - publish_date
+      - name
+    default: publish_date
 paths:
+  /health:
+    get:
+      summary: "Returns API's health status"
+      description: "Returns health status of the API and checks on dependent services"
+      produces:
+        - application/json
+      responses:
+        200:
+          description: "Successfully returns OK status with checks of dependent services"
+          schema:
+            $ref: "#/definitions/Health"
+        429:
+          description: "Services warming up or degraded (at least one check in WARNING or CRITICAL status)"
+        500:
+          $ref: "#/responses/InternalError"
+  /collections:
+    get:
+      summary: Get a list of collections
+      description: Get a list of all collections
+      parameters:
+        - $ref: '#/parameters/limit'
+        - $ref: '#/parameters/offset'
+        - $ref: '#/parameters/name'
+        - $ref: '#/parameters/order_by'
+      produces:
+        - application/json
+      responses:
+        200:
+          description: "A JSON list of collections"
+          schema:
+            type: object
+            properties:
+              count:
+                description: "Number of collections in the response"
+                type: integer
+              limit:
+                description: "Number of collections requested"
+                type: integer
+                default: 20
+                maximum: 1000
+                minimum: 0
+              offset:
+                description: "Number of collections into the list that the response starts at"
+                type: integer
+                default: 0
+                minimum: 0
+              total_count:
+                description: "Total number of collections"
+                type: integer
+              items:
+                description: "list of collections"
+                type: array
+                items:
+                  $ref: "#/definitions/Collection"
+        500:
+          $ref: '#/responses/InternalError'
+    post:
+      summary: "Creates a new collection"
+      parameters:
+        - name: name
+          in: body
+          schema:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                description: "Name of the collection"
+                type: string
+                example: "Coronavirus key indicators"
+              type:
+                description: "Way in which collection will be published"
+                type: string
+                enum: [manual, scheduled]
+              publish_date:
+                description: "Date when the collection should be published"
+                type: string
+                format: date
+                default: ???
+      responses:
+        201:
+          description: "Successfully added a collection"
+        500:
+          $ref: '#/responses/InternalError'
+  /collections/{collection_id}/events:
+    get:
+      summary: "Gets events for a collection"
+      parameters:
+        - $ref: '#/parameters/collection_id'
+      responses:
+        200:
+          description: "Successfully retrieved an event for a collection"
+        500:
+          $ref: '#/responses/InternalError'
+    post:
+      summary: "Creates an event for a collection"
+      parameters:
+        - $ref: '#/parameters/collection_id'
+      responses:
+        201:
+          description: "Successfully created an event for a collection"
+        500:
+          $ref: '#/responses/InternalError'
 
 responses:
   InternalError:
     description: "Failed to process the request due to an internal error"
 
+definitions:
+  Collection:
+    description: "A model for the response body when getting a collection"
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        description: "A unique identifier for the collection"
+        type: string
+      name:
+        description: "The name of the collection"
+        type: string
+        example: "LMSV1"
+      publishing_date:
+        description: "UTC timestamp indicating when the collection was/will be published"
+        type: string
+        format: date-time
+        example: "2020-04-26T08:05:52Z"
+        default: "to be determined"
+  Health:
+    type: object
+    properties:
+      status:
+        type: string
+        description: "The status of the API"
+        enum: ["OK", "WARNING", "CRITICAL"]
+      version:
+        type: object
+        properties:
+          build_time:
+            type: string
+            description: "The build date and time of the API"
+            example: "2020-06-11T12:49:20+01:00"
+          git_commit:
+            type: string
+            description: "The git commit hash of the API"
+            example: "7c2febbf2b818175112478d4ffbadbee1b654f63"
+          language:
+            type: string
+            description: "The programming language used to implement API"
+            example: "go"
+          language_version:
+            type: string
+            description: "The version of the programming language used to implement API"
+            example: "go1.14.3"
+          version:
+            type: string
+            description: "The version of API"
+            example: "1.0.0"
+      uptime:
+        type: string
+        description: "The uptime of API"
+        example: "34516"
+      start_time:
+        type: string
+        description: "The start date and time of API running"
+        example: "2020-06-11T11:49:21.520922Z"
+      checks:
+        type: array
+        items:
+          $ref: '#/definitions/HealthChecker'
+  HealthChecker:
+    type: object
+    properties:
+      name:
+        type: string
+        description: "The name of external service used by API"
+        enum: ["mongodb"]
+      status:
+        type: string
+        description: "The status of the external service"
+        enum: ["OK", "WARNING", "CRITICAL"]
+      message:
+        type: string
+        description: "The message status of the external service"
+        example: "mongodb is OK"
+      last_checked:
+        type: string
+        description: "The last health check date and time of the external service"
+        example: "2020-06-11T11:49:50.330089Z"
+      last_success:
+        type: string
+        description: "The last successful health check date and time of the external service"
+        example: "2020-06-11T11:49:50.330089Z"
+      last_failure:
+        type: string
+        description: "The last failed health check date and time of the external service"
+        example: null
