@@ -33,3 +33,7 @@ convey:
 .PHONY: test-component
 test-component:
 	go test -cover -coverpkg=github.com/ONSdigital/dp-collection-api/... -component
+
+.PHONY: lint
+lint:
+	exit
