@@ -105,9 +105,6 @@ func (m *Mongo) GetCollections(ctx context.Context, queryParams collections.Quer
 	totalCount, err := q.Count(ctx)
 	if err != nil {
 		log.Error(ctx, "error getting count of collections from mongo db", err)
-		if dpMongoDriver.IsErrNoDocumentFound(err) {
-			return []models.Collection{}, totalCount, nil
-		}
 		return nil, totalCount, err
 	}
 
@@ -116,9 +113,6 @@ func (m *Mongo) GetCollections(ctx context.Context, queryParams collections.Quer
 	if queryParams.Limit > 0 {
 		err = q.Skip(queryParams.Offset).Limit(queryParams.Limit).IterAll(ctx, &values)
 		if err != nil {
-			if dpMongoDriver.IsErrNoDocumentFound(err) {
-				return []models.Collection{}, totalCount, nil
-			}
 			return nil, totalCount, err
 		}
 	}
