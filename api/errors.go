@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-collection-api/pagination"
@@ -17,7 +18,10 @@ var (
 		pagination.ErrLimitOverMax:           true,
 		collections.ErrInvalidOrderBy:        true,
 		collections.ErrNameSearchTooLong:     true,
+		ErrUnableToParseJSON:                 true,
 	}
+
+	ErrUnableToParseJSON = errors.New("failed to parse json body")
 )
 
 func handleError(ctx context.Context, err error, w http.ResponseWriter, logData log.Data) {

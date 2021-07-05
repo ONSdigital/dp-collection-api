@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/ONSdigital/dp-collection-api/api/mock"
@@ -315,6 +316,110 @@ func TestGetCollections_internalError(t *testing.T) {
 	})
 }
 
+func TestPostCollection(t *testing.T) {
+
+	newCollectionJson := `{
+		"name": "Coronavirus key indicators",
+		"publish_date": "2020-05-05T14:58:29.317Z"
+	}`
+	expectedName := "Coronavirus key indicators"
+	expectedID := "12345"
+	api.NewID = func() string {
+		return expectedID
+	}
+
+	Convey("Given a request to POST a collection", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+
+		r := httptest.NewRequest("POST", "http://localhost:26000/collections", bytes.NewBufferString(newCollectionJson))
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+			api.AddCollectionHandler(w, r)
+
+			Convey("Then the collection store is called", func() {
+				So(len(collectionStore.UpsertCollectionCalls()), ShouldEqual, 1)
+				getCollectionsCall := collectionStore.UpsertCollectionCalls()[0]
+				So(getCollectionsCall.Collection.ID, ShouldEqual, expectedID)
+				So(getCollectionsCall.Collection.Name, ShouldEqual, expectedName)
+				So(getCollectionsCall.Collection.PublishDate.String(), ShouldEqual, "2020-05-05 14:58:29.317 +0000 UTC")
+			})
+
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusCreated)
+			})
+
+			Convey("Then the response body should contain the collections", func() {
+				body, err := ioutil.ReadAll(w.Body)
+				So(err, ShouldBeNil)
+				response := models.Collection{}
+				err = json.Unmarshal(body, &response)
+				So(err, ShouldBeNil)
+				So(response.Name, ShouldEqual, expectedName)
+			})
+		})
+	})
+}
+
+func TestPostCollection_storeError(t *testing.T) {
+
+	newCollectionJson := `{
+		"name": "Coronavirus key indicators",
+		"publish_date": "2020-05-05T14:58:29.317Z"
+	}`
+
+	Convey("Given a request to POST a collection", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+
+		collectionStore.UpsertCollectionFunc = func(ctx context.Context, collection *models.Collection) error {
+			return errors.New("db is broken")
+		}
+
+		r := httptest.NewRequest("POST", "http://localhost:26000/collections", bytes.NewBufferString(newCollectionJson))
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API and an error is returned from the DB", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+			api.AddCollectionHandler(w, r)
+
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusInternalServerError)
+			})
+		})
+	})
+}
+
+func TestPostCollection_invalidRequestBody(t *testing.T) {
+
+	newCollectionJson := `{`
+
+	Convey("Given a request to POST a collection with an invalid request body", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+
+		r := httptest.NewRequest("POST", "http://localhost:26000/collections", bytes.NewBufferString(newCollectionJson))
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+			api.AddCollectionHandler(w, r)
+
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusBadRequest)
+			})
+		})
+	})
+}
+
 func mockPaginator() *mock.PaginatorMock {
 
 	paginator := &mock.PaginatorMock{
@@ -332,9 +437,12 @@ func mockCollectionStore() *mock.CollectionStoreMock {
 			return []models.Collection{{
 				ID:          "123",
 				Name:        "collection 1",
-				PublishDate: time.Time{},
+				PublishDate: &time.Time{},
 				LastUpdated: time.Time{},
 			}}, totalCount, nil
+		},
+		UpsertCollectionFunc: func(ctx context.Context, collection *models.Collection) error {
+			return nil
 		},
 	}
 

@@ -24,6 +24,9 @@ var _ api.CollectionStore = &CollectionStoreMock{}
 //             GetCollectionsFunc: func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 // 	               panic("mock out the GetCollections method")
 //             },
+//             UpsertCollectionFunc: func(ctx context.Context, collection *models.Collection) error {
+// 	               panic("mock out the UpsertCollection method")
+//             },
 //         }
 //
 //         // use mockedCollectionStore in code that requires api.CollectionStore
@@ -34,6 +37,9 @@ type CollectionStoreMock struct {
 	// GetCollectionsFunc mocks the GetCollections method.
 	GetCollectionsFunc func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error)
 
+	// UpsertCollectionFunc mocks the UpsertCollection method.
+	UpsertCollectionFunc func(ctx context.Context, collection *models.Collection) error
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// GetCollections holds details about calls to the GetCollections method.
@@ -43,8 +49,16 @@ type CollectionStoreMock struct {
 			// QueryParams is the queryParams argument value.
 			QueryParams collections.QueryParams
 		}
+		// UpsertCollection holds details about calls to the UpsertCollection method.
+		UpsertCollection []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Collection is the collection argument value.
+			Collection *models.Collection
+		}
 	}
-	lockGetCollections sync.RWMutex
+	lockGetCollections   sync.RWMutex
+	lockUpsertCollection sync.RWMutex
 }
 
 // GetCollections calls GetCollectionsFunc.
@@ -79,5 +93,40 @@ func (mock *CollectionStoreMock) GetCollectionsCalls() []struct {
 	mock.lockGetCollections.RLock()
 	calls = mock.calls.GetCollections
 	mock.lockGetCollections.RUnlock()
+	return calls
+}
+
+// UpsertCollection calls UpsertCollectionFunc.
+func (mock *CollectionStoreMock) UpsertCollection(ctx context.Context, collection *models.Collection) error {
+	if mock.UpsertCollectionFunc == nil {
+		panic("CollectionStoreMock.UpsertCollectionFunc: method is nil but CollectionStore.UpsertCollection was just called")
+	}
+	callInfo := struct {
+		Ctx        context.Context
+		Collection *models.Collection
+	}{
+		Ctx:        ctx,
+		Collection: collection,
+	}
+	mock.lockUpsertCollection.Lock()
+	mock.calls.UpsertCollection = append(mock.calls.UpsertCollection, callInfo)
+	mock.lockUpsertCollection.Unlock()
+	return mock.UpsertCollectionFunc(ctx, collection)
+}
+
+// UpsertCollectionCalls gets all the calls that were made to UpsertCollection.
+// Check the length with:
+//     len(mockedCollectionStore.UpsertCollectionCalls())
+func (mock *CollectionStoreMock) UpsertCollectionCalls() []struct {
+	Ctx        context.Context
+	Collection *models.Collection
+} {
+	var calls []struct {
+		Ctx        context.Context
+		Collection *models.Collection
+	}
+	mock.lockUpsertCollection.RLock()
+	calls = mock.calls.UpsertCollection
+	mock.lockUpsertCollection.RUnlock()
 	return calls
 }

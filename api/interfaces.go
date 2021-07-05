@@ -18,4 +18,5 @@ type Paginator interface {
 // CollectionStore defines the required methods from the data store of collections
 type CollectionStore interface {
 	GetCollections(ctx context.Context, queryParams collections.QueryParams) (collections []models.Collection, totalCount int, err error)
+	UpsertCollection(ctx context.Context, collection *models.Collection) error
 }

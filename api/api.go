@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
+	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
 
@@ -23,6 +24,7 @@ func Setup(ctx context.Context, r *mux.Router, paginator Paginator, collectionSt
 		collectionStore: collectionStore,
 	}
 
+	r.HandleFunc("/collections", api.AddCollectionHandler).Methods(http.MethodPost)
 	r.HandleFunc("/collections", api.GetCollectionsHandler).Methods(http.MethodGet)
 	return api
 }
@@ -41,4 +43,9 @@ func WriteJSONBody(ctx context.Context, v interface{}, w http.ResponseWriter, da
 	}
 
 	return nil
+}
+
+// NewID returns a new UUID
+var NewID = func() string {
+	return uuid.NewV4().String()
 }

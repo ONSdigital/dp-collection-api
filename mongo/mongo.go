@@ -11,6 +11,7 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 const (
@@ -118,4 +119,19 @@ func (m *Mongo) GetCollections(ctx context.Context, queryParams collections.Quer
 	}
 
 	return values, totalCount, nil
+}
+
+// UpsertCollection adds or updates a collection
+func (m *Mongo) UpsertCollection(ctx context.Context, collection *models.Collection) error {
+
+	update := bson.M{
+		"$set": collection,
+		"$setOnInsert": bson.M{
+			"last_updated": time.Now(),
+		},
+	}
+
+	_, err := m.Connection.GetConfiguredCollection().UpsertId(ctx, collection.ID, update)
+
+	return err
 }

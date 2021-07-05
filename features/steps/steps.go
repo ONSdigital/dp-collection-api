@@ -12,6 +12,7 @@ import (
 func (c *CollectionComponent) RegisterSteps(ctx *godog.ScenarioContext) {
 	c.apiFeature.RegisterSteps(ctx)
 
+	ctx.Step(`^there are no collections`, c.thereAreNoCollections)
 	ctx.Step(`^I have these collections:$`, c.iHaveTheseCollections)
 }
 
@@ -29,6 +30,11 @@ func (c *CollectionComponent) iHaveTheseCollections(input *godog.DocString) erro
 		}
 	}
 
+	return nil
+}
+
+func (c *CollectionComponent) thereAreNoCollections() error {
+	// nothing to do
 	return nil
 }
 
