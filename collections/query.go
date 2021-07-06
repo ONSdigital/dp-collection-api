@@ -11,6 +11,9 @@ var ErrCollectionNameAlreadyExists = errors.New("a collection with this name alr
 // ErrCollectionNameEmpty is the error used when an empty collection name value is provided
 var ErrCollectionNameEmpty = errors.New("the collection name field must be specified")
 
+// ErrNilCollection is the error used when nil collection is identified
+var ErrNilCollection = errors.New("could not validate a nil collection")
+
 // QueryParams represents the query parameters that can be sent to get collections
 type QueryParams struct {
 	Offset     int

@@ -81,6 +81,10 @@ func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
 
 func (api *API) validateCollection(ctx context.Context, collection *models.Collection) error {
 
+	if collection == nil {
+		return collections.ErrNilCollection
+	}
+
 	if len(collection.Name) == 0 {
 		return collections.ErrCollectionNameEmpty
 	}
