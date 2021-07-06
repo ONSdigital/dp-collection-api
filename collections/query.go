@@ -5,6 +5,8 @@ import "github.com/pkg/errors"
 // ErrNameSearchTooLong is the error used when an name search value is larger than the maximum allowed
 var ErrNameSearchTooLong = errors.New("name search text is >64 chars")
 
+var ErrCollectionNameAlreadyExists = errors.New("a collection with this name already exists")
+
 // QueryParams represents the query parameters that can be sent to get collections
 type QueryParams struct {
 	Offset     int

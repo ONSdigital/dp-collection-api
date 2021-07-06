@@ -121,6 +121,22 @@ func (m *Mongo) GetCollections(ctx context.Context, queryParams collections.Quer
 	return values, totalCount, nil
 }
 
+// GetCollectionByName retrieves a single collection by name
+func (m *Mongo) GetCollectionByName(ctx context.Context, name string) (*models.Collection, error) {
+
+	query := bson.D{{"name", name}}
+	result := &models.Collection{}
+
+	err := m.Connection.
+		GetConfiguredCollection().
+		FindOne(ctx, query, result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // UpsertCollection adds or updates a collection
 func (m *Mongo) UpsertCollection(ctx context.Context, collection *models.Collection) error {
 

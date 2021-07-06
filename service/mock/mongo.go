@@ -28,6 +28,9 @@ var _ service.MongoDB = &MongoDBMock{}
 //             CloseFunc: func(in1 context.Context) error {
 // 	               panic("mock out the Close method")
 //             },
+//             GetCollectionByNameFunc: func(ctx context.Context, name string) (*models.Collection, error) {
+// 	               panic("mock out the GetCollectionByName method")
+//             },
 //             GetCollectionsFunc: func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 // 	               panic("mock out the GetCollections method")
 //             },
@@ -46,6 +49,9 @@ type MongoDBMock struct {
 
 	// CloseFunc mocks the Close method.
 	CloseFunc func(in1 context.Context) error
+
+	// GetCollectionByNameFunc mocks the GetCollectionByName method.
+	GetCollectionByNameFunc func(ctx context.Context, name string) (*models.Collection, error)
 
 	// GetCollectionsFunc mocks the GetCollections method.
 	GetCollectionsFunc func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error)
@@ -67,6 +73,13 @@ type MongoDBMock struct {
 			// In1 is the in1 argument value.
 			In1 context.Context
 		}
+		// GetCollectionByName holds details about calls to the GetCollectionByName method.
+		GetCollectionByName []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Name is the name argument value.
+			Name string
+		}
 		// GetCollections holds details about calls to the GetCollections method.
 		GetCollections []struct {
 			// Ctx is the ctx argument value.
@@ -82,10 +95,11 @@ type MongoDBMock struct {
 			Collection *models.Collection
 		}
 	}
-	lockChecker          sync.RWMutex
-	lockClose            sync.RWMutex
-	lockGetCollections   sync.RWMutex
-	lockUpsertCollection sync.RWMutex
+	lockChecker             sync.RWMutex
+	lockClose               sync.RWMutex
+	lockGetCollectionByName sync.RWMutex
+	lockGetCollections      sync.RWMutex
+	lockUpsertCollection    sync.RWMutex
 }
 
 // Checker calls CheckerFunc.
@@ -151,6 +165,41 @@ func (mock *MongoDBMock) CloseCalls() []struct {
 	mock.lockClose.RLock()
 	calls = mock.calls.Close
 	mock.lockClose.RUnlock()
+	return calls
+}
+
+// GetCollectionByName calls GetCollectionByNameFunc.
+func (mock *MongoDBMock) GetCollectionByName(ctx context.Context, name string) (*models.Collection, error) {
+	if mock.GetCollectionByNameFunc == nil {
+		panic("MongoDBMock.GetCollectionByNameFunc: method is nil but MongoDB.GetCollectionByName was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Name string
+	}{
+		Ctx:  ctx,
+		Name: name,
+	}
+	mock.lockGetCollectionByName.Lock()
+	mock.calls.GetCollectionByName = append(mock.calls.GetCollectionByName, callInfo)
+	mock.lockGetCollectionByName.Unlock()
+	return mock.GetCollectionByNameFunc(ctx, name)
+}
+
+// GetCollectionByNameCalls gets all the calls that were made to GetCollectionByName.
+// Check the length with:
+//     len(mockedMongoDB.GetCollectionByNameCalls())
+func (mock *MongoDBMock) GetCollectionByNameCalls() []struct {
+	Ctx  context.Context
+	Name string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Name string
+	}
+	mock.lockGetCollectionByName.RLock()
+	calls = mock.calls.GetCollectionByName
+	mock.lockGetCollectionByName.RUnlock()
 	return calls
 }
 

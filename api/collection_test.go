@@ -8,6 +8,7 @@ import (
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-collection-api/pagination"
+	"github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -342,6 +343,10 @@ func TestPostCollection(t *testing.T) {
 			api.AddCollectionHandler(w, r)
 
 			Convey("Then the collection store is called", func() {
+
+				So(len(collectionStore.GetCollectionByNameCalls()), ShouldEqual, 1)
+				So(collectionStore.GetCollectionByNameCalls()[0].Name, ShouldEqual, expectedName)
+
 				So(len(collectionStore.UpsertCollectionCalls()), ShouldEqual, 1)
 				getCollectionsCall := collectionStore.UpsertCollectionCalls()[0]
 				So(getCollectionsCall.Collection.ID, ShouldEqual, expectedID)
@@ -360,6 +365,86 @@ func TestPostCollection(t *testing.T) {
 				err = json.Unmarshal(body, &response)
 				So(err, ShouldBeNil)
 				So(response.Name, ShouldEqual, expectedName)
+			})
+		})
+	})
+}
+
+func TestPostCollection_CollectionNameAlreadyExists(t *testing.T) {
+
+	newCollectionJson := `{
+		"name": "Coronavirus key indicators",
+		"publish_date": "2020-05-05T14:58:29.317Z"
+	}`
+	expectedName := "Coronavirus key indicators"
+	expectedID := "12345"
+	api.NewID = func() (string, error) {
+		return expectedID, nil
+	}
+
+	Convey("Given a request to POST a collection with a name that already exists", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+		collectionStore.GetCollectionByNameFunc = func(ctx context.Context, name string) (*models.Collection, error) {
+			return &models.Collection{}, nil
+		}
+
+		r := httptest.NewRequest("POST", "http://localhost:26000/collections", bytes.NewBufferString(newCollectionJson))
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+			api.AddCollectionHandler(w, r)
+
+			Convey("Then the collection store is called", func() {
+				So(len(collectionStore.GetCollectionByNameCalls()), ShouldEqual, 1)
+				So(collectionStore.GetCollectionByNameCalls()[0].Name, ShouldEqual, expectedName)
+			})
+
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusConflict)
+			})
+		})
+	})
+}
+
+func TestPostCollection_CollectionNameLookupError(t *testing.T) {
+
+	newCollectionJson := `{
+		"name": "Coronavirus key indicators",
+		"publish_date": "2020-05-05T14:58:29.317Z"
+	}`
+	expectedName := "Coronavirus key indicators"
+	expectedID := "12345"
+	api.NewID = func() (string, error) {
+		return expectedID, nil
+	}
+
+	Convey("Given a request to POST a collection with a failed collection name lookup", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+		collectionStore.GetCollectionByNameFunc = func(ctx context.Context, name string) (*models.Collection, error) {
+			return nil, errors.New("well that was unexpected")
+		}
+
+		r := httptest.NewRequest("POST", "http://localhost:26000/collections", bytes.NewBufferString(newCollectionJson))
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+			api.AddCollectionHandler(w, r)
+
+			Convey("Then the collection store is called", func() {
+				So(len(collectionStore.GetCollectionByNameCalls()), ShouldEqual, 1)
+				So(collectionStore.GetCollectionByNameCalls()[0].Name, ShouldEqual, expectedName)
+			})
+
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusInternalServerError)
 			})
 		})
 	})
@@ -443,6 +528,9 @@ func mockCollectionStore() *mock.CollectionStoreMock {
 		},
 		UpsertCollectionFunc: func(ctx context.Context, collection *models.Collection) error {
 			return nil
+		},
+		GetCollectionByNameFunc: func(ctx context.Context, name string) (*models.Collection, error) {
+			return nil, &mongodb.ErrNoDocumentFound{}
 		},
 	}
 

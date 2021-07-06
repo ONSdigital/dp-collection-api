@@ -21,6 +21,10 @@ var (
 		ErrUnableToParseJSON:                 true,
 	}
 
+	conflictRequest = map[error]bool{
+		collections.ErrCollectionNameAlreadyExists: true,
+	}
+
 	ErrUnableToParseJSON = errors.New("failed to parse json body")
 )
 
@@ -30,6 +34,8 @@ func handleError(ctx context.Context, err error, w http.ResponseWriter, logData 
 
 	case badRequest[err]:
 		status = http.StatusBadRequest
+	case conflictRequest[err]:
+		status = http.StatusConflict
 	default:
 		status = http.StatusInternalServerError
 	}

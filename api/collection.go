@@ -6,6 +6,7 @@ import (
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-collection-api/pagination"
+	"github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/v2/log"
 	"io"
@@ -57,7 +58,7 @@ func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collection.ID, err = NewID()
+	err = api.validateCollection(ctx, collection)
 	if err != nil {
 		handleError(ctx, err, w, logData)
 		return
@@ -78,6 +79,19 @@ func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
 	log.Event(ctx, "add collection request completed successfully", log.INFO, logData)
 }
 
+func (api *API) validateCollection(ctx context.Context, collection *models.Collection) error {
+
+	_, err := api.collectionStore.GetCollectionByName(ctx, collection.Name)
+	if err != nil && !mongodb.IsErrNoDocumentFound(err) {
+		return err
+	}
+	if err == nil {
+		return collections.ErrCollectionNameAlreadyExists
+	}
+
+	return nil
+}
+
 func ParseCollection(ctx context.Context, reader io.Reader) (*models.Collection, error) {
 
 	b, err := ioutil.ReadAll(reader)
@@ -91,6 +105,11 @@ func ParseCollection(ctx context.Context, reader io.Reader) (*models.Collection,
 	if err != nil {
 		log.Error(ctx, "failed to parse collection json body", err)
 		return nil, ErrUnableToParseJSON
+	}
+
+	collection.ID, err = NewID()
+	if err != nil {
+		return nil, err
 	}
 
 	return &collection, nil
