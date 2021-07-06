@@ -57,7 +57,11 @@ func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collection.ID = NewID()
+	collection.ID, err = NewID()
+	if err != nil {
+		handleError(ctx, err, w, logData)
+		return
+	}
 
 	if err = api.collectionStore.UpsertCollection(ctx, collection); err != nil {
 		handleError(ctx, err, w, logData)

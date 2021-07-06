@@ -324,8 +324,8 @@ func TestPostCollection(t *testing.T) {
 	}`
 	expectedName := "Coronavirus key indicators"
 	expectedID := "12345"
-	api.NewID = func() string {
-		return expectedID
+	api.NewID = func() (string, error) {
+		return expectedID, nil
 	}
 
 	Convey("Given a request to POST a collection", t, func() {

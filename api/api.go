@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
-	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
 
@@ -46,6 +46,11 @@ func WriteJSONBody(ctx context.Context, v interface{}, w http.ResponseWriter, da
 }
 
 // NewID returns a new UUID
-var NewID = func() string {
-	return uuid.NewV4().String()
+var NewID = func() (string, error) {
+	uuid, err := uuid.NewV4()
+	if err != nil {
+		return "", err
+	}
+
+	return uuid.String(), nil
 }
