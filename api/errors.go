@@ -18,6 +18,7 @@ var (
 		pagination.ErrLimitOverMax:           true,
 		collections.ErrInvalidOrderBy:        true,
 		collections.ErrNameSearchTooLong:     true,
+		collections.ErrCollectionNameEmpty:   true,
 		ErrUnableToParseJSON:                 true,
 	}
 

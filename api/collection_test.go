@@ -410,6 +410,36 @@ func TestPostCollection_CollectionNameAlreadyExists(t *testing.T) {
 	})
 }
 
+func TestPostCollection_EmptyCollectionNameError(t *testing.T) {
+
+	newCollectionJson := `{
+		"name": ""
+	}`
+	expectedID := "12345"
+	api.NewID = func() (string, error) {
+		return expectedID, nil
+	}
+
+	Convey("Given a request to POST a collection with an empty collection name", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+
+		r := httptest.NewRequest("POST", "http://localhost:26000/collections", bytes.NewBufferString(newCollectionJson))
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+			api.AddCollectionHandler(w, r)
+
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusBadRequest)
+			})
+		})
+	})
+}
+
 func TestPostCollection_CollectionNameLookupError(t *testing.T) {
 
 	newCollectionJson := `{
