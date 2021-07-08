@@ -30,6 +30,7 @@ var GetHTTPServer = func(bindAddr string, router http.Handler) HTTPServer {
 var GetMongoDB = func(ctx context.Context, cfg config.MongoConfig) (MongoDB, error) {
 	mongodb := &mongo.Mongo{
 		CollectionsCollection: cfg.CollectionsCollection,
+		EventsCollection:      cfg.EventsCollection,
 		Database:              cfg.CollectionsDatabase,
 		Username:              cfg.Username,
 		Password:              cfg.Password,

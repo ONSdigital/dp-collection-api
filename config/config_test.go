@@ -35,6 +35,7 @@ func TestConfig(t *testing.T) {
 						BindAddr:              "localhost:27017",
 						CollectionsDatabase:   "collections",
 						CollectionsCollection: "collections",
+						EventsCollection:      "events",
 						Username:              "",
 						Password:              "",
 						IsSSL:                 false,

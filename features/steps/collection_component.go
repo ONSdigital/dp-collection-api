@@ -48,6 +48,7 @@ func NewCollectionComponent(mongoFeature *componenttest.MongoFeature) (*Collecti
 		Database:              memongo.RandomDatabase(),
 		URI:                   mongoURI,
 		CollectionsCollection: c.config.MongoConfig.CollectionsCollection,
+		EventsCollection:      c.config.MongoConfig.EventsCollection,
 	}
 
 	if err := c.mongoClient.Init(); err != nil {

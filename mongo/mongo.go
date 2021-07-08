@@ -24,6 +24,7 @@ type Mongo struct {
 	healthClient          *dpMongoHealth.CheckMongoClient
 	Database              string
 	CollectionsCollection string
+	EventsCollection      string
 	Connection            *dpMongoDriver.MongoConnection
 	Username              string
 	Password              string
@@ -95,7 +96,7 @@ func (m *Mongo) GetCollections(ctx context.Context, queryParams collections.Quer
 	}
 
 	q = m.Connection.
-		GetConfiguredCollection().
+		C(m.CollectionsCollection).
 		Find(query)
 
 	switch queryParams.OrderBy {
@@ -128,7 +129,7 @@ func (m *Mongo) GetCollectionByName(ctx context.Context, name string) (*models.C
 	result := &models.Collection{}
 
 	err := m.Connection.
-		GetConfiguredCollection().
+		C(m.CollectionsCollection).
 		FindOne(ctx, query, result)
 	if err != nil {
 		return nil, err
@@ -147,7 +148,37 @@ func (m *Mongo) UpsertCollection(ctx context.Context, collection *models.Collect
 		},
 	}
 
-	_, err := m.Connection.GetConfiguredCollection().UpsertId(ctx, collection.ID, update)
+	_, err := m.Connection.C(m.CollectionsCollection).UpsertId(ctx, collection.ID, update)
 
 	return err
+}
+
+// GetCollectionEvents retrieves all events for a collection
+func (m *Mongo) GetCollectionEvents(ctx context.Context, queryParams collections.EventsQueryParams) ([]models.Event, int, error) {
+
+	var q *dpMongoDriver.Find
+
+	query := bson.D{{"collection_id", queryParams.CollectionID}}
+
+	q = m.Connection.
+		C(m.EventsCollection).
+		Find(query).
+		Sort(bson.D{{"date", 1}})
+
+	totalCount, err := q.Count(ctx)
+	if err != nil {
+		log.Error(ctx, "error getting count of collection events from mongo db", err)
+		return nil, totalCount, err
+	}
+
+	var values []models.Event
+
+	if queryParams.Limit > 0 {
+		err = q.Skip(queryParams.Offset).Limit(queryParams.Limit).IterAll(ctx, &values)
+		if err != nil {
+			return nil, totalCount, err
+		}
+	}
+
+	return values, totalCount, nil
 }

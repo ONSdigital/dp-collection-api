@@ -562,6 +562,16 @@ func mockCollectionStore() *mock.CollectionStoreMock {
 		GetCollectionByNameFunc: func(ctx context.Context, name string) (*models.Collection, error) {
 			return nil, &mongodb.ErrNoDocumentFound{}
 		},
+		GetCollectionEventsFunc: func(ctx context.Context, queryParams collections.EventsQueryParams) ([]models.Event, int, error) {
+			return []models.Event{{
+				ID:           "321",
+				Type:         "CREATED",
+				Email:        "test@test.com",
+				Date:         time.Time{},
+				CollectionID: "123",
+			}}, totalCount, nil
+
+		},
 	}
 
 	return collectionStore

@@ -24,6 +24,9 @@ var _ api.CollectionStore = &CollectionStoreMock{}
 //             GetCollectionByNameFunc: func(ctx context.Context, name string) (*models.Collection, error) {
 // 	               panic("mock out the GetCollectionByName method")
 //             },
+//             GetCollectionEventsFunc: func(ctx context.Context, queryParams collections.EventsQueryParams) ([]models.Event, int, error) {
+// 	               panic("mock out the GetCollectionEvents method")
+//             },
 //             GetCollectionsFunc: func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 // 	               panic("mock out the GetCollections method")
 //             },
@@ -40,6 +43,9 @@ type CollectionStoreMock struct {
 	// GetCollectionByNameFunc mocks the GetCollectionByName method.
 	GetCollectionByNameFunc func(ctx context.Context, name string) (*models.Collection, error)
 
+	// GetCollectionEventsFunc mocks the GetCollectionEvents method.
+	GetCollectionEventsFunc func(ctx context.Context, queryParams collections.EventsQueryParams) ([]models.Event, int, error)
+
 	// GetCollectionsFunc mocks the GetCollections method.
 	GetCollectionsFunc func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error)
 
@@ -54,6 +60,13 @@ type CollectionStoreMock struct {
 			Ctx context.Context
 			// Name is the name argument value.
 			Name string
+		}
+		// GetCollectionEvents holds details about calls to the GetCollectionEvents method.
+		GetCollectionEvents []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// QueryParams is the queryParams argument value.
+			QueryParams collections.EventsQueryParams
 		}
 		// GetCollections holds details about calls to the GetCollections method.
 		GetCollections []struct {
@@ -71,6 +84,7 @@ type CollectionStoreMock struct {
 		}
 	}
 	lockGetCollectionByName sync.RWMutex
+	lockGetCollectionEvents sync.RWMutex
 	lockGetCollections      sync.RWMutex
 	lockUpsertCollection    sync.RWMutex
 }
@@ -107,6 +121,41 @@ func (mock *CollectionStoreMock) GetCollectionByNameCalls() []struct {
 	mock.lockGetCollectionByName.RLock()
 	calls = mock.calls.GetCollectionByName
 	mock.lockGetCollectionByName.RUnlock()
+	return calls
+}
+
+// GetCollectionEvents calls GetCollectionEventsFunc.
+func (mock *CollectionStoreMock) GetCollectionEvents(ctx context.Context, queryParams collections.EventsQueryParams) ([]models.Event, int, error) {
+	if mock.GetCollectionEventsFunc == nil {
+		panic("CollectionStoreMock.GetCollectionEventsFunc: method is nil but CollectionStore.GetCollectionEvents was just called")
+	}
+	callInfo := struct {
+		Ctx         context.Context
+		QueryParams collections.EventsQueryParams
+	}{
+		Ctx:         ctx,
+		QueryParams: queryParams,
+	}
+	mock.lockGetCollectionEvents.Lock()
+	mock.calls.GetCollectionEvents = append(mock.calls.GetCollectionEvents, callInfo)
+	mock.lockGetCollectionEvents.Unlock()
+	return mock.GetCollectionEventsFunc(ctx, queryParams)
+}
+
+// GetCollectionEventsCalls gets all the calls that were made to GetCollectionEvents.
+// Check the length with:
+//     len(mockedCollectionStore.GetCollectionEventsCalls())
+func (mock *CollectionStoreMock) GetCollectionEventsCalls() []struct {
+	Ctx         context.Context
+	QueryParams collections.EventsQueryParams
+} {
+	var calls []struct {
+		Ctx         context.Context
+		QueryParams collections.EventsQueryParams
+	}
+	mock.lockGetCollectionEvents.RLock()
+	calls = mock.calls.GetCollectionEvents
+	mock.lockGetCollectionEvents.RUnlock()
 	return calls
 }
 

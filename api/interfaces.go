@@ -20,4 +20,5 @@ type CollectionStore interface {
 	GetCollections(ctx context.Context, queryParams collections.QueryParams) (collections []models.Collection, totalCount int, err error)
 	UpsertCollection(ctx context.Context, collection *models.Collection) error
 	GetCollectionByName(ctx context.Context, name string) (*models.Collection, error)
+	GetCollectionEvents(ctx context.Context, queryParams collections.EventsQueryParams) ([]models.Event, int, error)
 }

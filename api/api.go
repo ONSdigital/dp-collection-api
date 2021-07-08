@@ -26,6 +26,7 @@ func Setup(ctx context.Context, r *mux.Router, paginator Paginator, collectionSt
 
 	r.HandleFunc("/collections", api.AddCollectionHandler).Methods(http.MethodPost)
 	r.HandleFunc("/collections", api.GetCollectionsHandler).Methods(http.MethodGet)
+	r.HandleFunc("/collections/{collection_id}/events", api.GetEventsHandler).Methods(http.MethodGet)
 	return api
 }
 
