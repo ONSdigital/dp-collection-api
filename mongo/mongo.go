@@ -110,7 +110,7 @@ func (m *Mongo) GetCollections(ctx context.Context, queryParams collections.Quer
 		return nil, totalCount, err
 	}
 
-	var values []models.Collection
+	values := []models.Collection{}
 
 	if queryParams.Limit > 0 {
 		err = q.Skip(queryParams.Offset).Limit(queryParams.Limit).IterAll(ctx, &values)
@@ -126,6 +126,22 @@ func (m *Mongo) GetCollections(ctx context.Context, queryParams collections.Quer
 func (m *Mongo) GetCollectionByName(ctx context.Context, name string) (*models.Collection, error) {
 
 	query := bson.D{{"name", name}}
+	result := &models.Collection{}
+
+	err := m.Connection.
+		C(m.CollectionsCollection).
+		FindOne(ctx, query, result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// GetCollectionByID retrieves a single collection by ID
+func (m *Mongo) GetCollectionByID(ctx context.Context, id string) (*models.Collection, error) {
+
+	query := bson.D{{"_id", id}}
 	result := &models.Collection{}
 
 	err := m.Connection.
@@ -171,7 +187,7 @@ func (m *Mongo) GetCollectionEvents(ctx context.Context, queryParams collections
 		return nil, totalCount, err
 	}
 
-	var values []models.Event
+	values := []models.Event{}
 
 	if queryParams.Limit > 0 {
 		err = q.Skip(queryParams.Offset).Limit(queryParams.Limit).IterAll(ctx, &values)

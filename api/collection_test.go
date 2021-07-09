@@ -570,7 +570,9 @@ func mockCollectionStore() *mock.CollectionStoreMock {
 				Date:         time.Time{},
 				CollectionID: "123",
 			}}, totalCount, nil
-
+		},
+		GetCollectionByIDFunc: func(ctx context.Context, id string) (*models.Collection, error) {
+			return nil, nil
 		},
 	}
 

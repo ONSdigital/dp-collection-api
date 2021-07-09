@@ -22,6 +22,10 @@ var (
 		ErrUnableToParseJSON:                 true,
 	}
 
+	notFound = map[error]bool{
+		collections.ErrCollectionNotFound: true,
+	}
+
 	conflictRequest = map[error]bool{
 		collections.ErrCollectionNameAlreadyExists: true,
 	}
@@ -35,6 +39,8 @@ func handleError(ctx context.Context, err error, w http.ResponseWriter, logData 
 
 	case badRequest[err]:
 		status = http.StatusBadRequest
+	case notFound[err]:
+		status = http.StatusNotFound
 	case conflictRequest[err]:
 		status = http.StatusConflict
 	default:

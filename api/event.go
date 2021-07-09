@@ -21,7 +21,11 @@ func (api *API) GetEventsHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	logData["query_params"] = queryParams
 
-	// todo check collection exists
+	_, err = api.collectionStore.GetCollectionByID(ctx, queryParams.CollectionID)
+	if err != nil {
+		handleError(ctx, collections.ErrCollectionNotFound, w, logData)
+		return
+	}
 
 	events, totalCount, err := api.collectionStore.GetCollectionEvents(ctx, *queryParams)
 	if err != nil {

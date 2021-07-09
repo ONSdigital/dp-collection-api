@@ -28,6 +28,9 @@ var _ service.MongoDB = &MongoDBMock{}
 //             CloseFunc: func(in1 context.Context) error {
 // 	               panic("mock out the Close method")
 //             },
+//             GetCollectionByIDFunc: func(ctx context.Context, id string) (*models.Collection, error) {
+// 	               panic("mock out the GetCollectionByID method")
+//             },
 //             GetCollectionByNameFunc: func(ctx context.Context, name string) (*models.Collection, error) {
 // 	               panic("mock out the GetCollectionByName method")
 //             },
@@ -52,6 +55,9 @@ type MongoDBMock struct {
 
 	// CloseFunc mocks the Close method.
 	CloseFunc func(in1 context.Context) error
+
+	// GetCollectionByIDFunc mocks the GetCollectionByID method.
+	GetCollectionByIDFunc func(ctx context.Context, id string) (*models.Collection, error)
 
 	// GetCollectionByNameFunc mocks the GetCollectionByName method.
 	GetCollectionByNameFunc func(ctx context.Context, name string) (*models.Collection, error)
@@ -78,6 +84,13 @@ type MongoDBMock struct {
 		Close []struct {
 			// In1 is the in1 argument value.
 			In1 context.Context
+		}
+		// GetCollectionByID holds details about calls to the GetCollectionByID method.
+		GetCollectionByID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID string
 		}
 		// GetCollectionByName holds details about calls to the GetCollectionByName method.
 		GetCollectionByName []struct {
@@ -110,6 +123,7 @@ type MongoDBMock struct {
 	}
 	lockChecker             sync.RWMutex
 	lockClose               sync.RWMutex
+	lockGetCollectionByID   sync.RWMutex
 	lockGetCollectionByName sync.RWMutex
 	lockGetCollectionEvents sync.RWMutex
 	lockGetCollections      sync.RWMutex
@@ -179,6 +193,41 @@ func (mock *MongoDBMock) CloseCalls() []struct {
 	mock.lockClose.RLock()
 	calls = mock.calls.Close
 	mock.lockClose.RUnlock()
+	return calls
+}
+
+// GetCollectionByID calls GetCollectionByIDFunc.
+func (mock *MongoDBMock) GetCollectionByID(ctx context.Context, id string) (*models.Collection, error) {
+	if mock.GetCollectionByIDFunc == nil {
+		panic("MongoDBMock.GetCollectionByIDFunc: method is nil but MongoDB.GetCollectionByID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  string
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockGetCollectionByID.Lock()
+	mock.calls.GetCollectionByID = append(mock.calls.GetCollectionByID, callInfo)
+	mock.lockGetCollectionByID.Unlock()
+	return mock.GetCollectionByIDFunc(ctx, id)
+}
+
+// GetCollectionByIDCalls gets all the calls that were made to GetCollectionByID.
+// Check the length with:
+//     len(mockedMongoDB.GetCollectionByIDCalls())
+func (mock *MongoDBMock) GetCollectionByIDCalls() []struct {
+	Ctx context.Context
+	ID  string
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  string
+	}
+	mock.lockGetCollectionByID.RLock()
+	calls = mock.calls.GetCollectionByID
+	mock.lockGetCollectionByID.RUnlock()
 	return calls
 }
 

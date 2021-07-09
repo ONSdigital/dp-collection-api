@@ -103,6 +103,9 @@ func TestGetEvents_collectionStoreError(t *testing.T) {
 
 		paginator := mockPaginator()
 		collectionStore := &mock.CollectionStoreMock{
+			GetCollectionByIDFunc: func(ctx context.Context, id string) (*models.Collection, error) {
+				return nil, nil
+			},
 			GetCollectionEventsFunc: func(ctx context.Context, queryParams collections.EventsQueryParams) ([]models.Event, int, error) {
 				return nil, 0, errors.New("store error")
 			},

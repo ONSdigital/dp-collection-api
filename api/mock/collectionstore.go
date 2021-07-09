@@ -21,6 +21,9 @@ var _ api.CollectionStore = &CollectionStoreMock{}
 //
 //         // make and configure a mocked api.CollectionStore
 //         mockedCollectionStore := &CollectionStoreMock{
+//             GetCollectionByIDFunc: func(ctx context.Context, id string) (*models.Collection, error) {
+// 	               panic("mock out the GetCollectionByID method")
+//             },
 //             GetCollectionByNameFunc: func(ctx context.Context, name string) (*models.Collection, error) {
 // 	               panic("mock out the GetCollectionByName method")
 //             },
@@ -40,6 +43,9 @@ var _ api.CollectionStore = &CollectionStoreMock{}
 //
 //     }
 type CollectionStoreMock struct {
+	// GetCollectionByIDFunc mocks the GetCollectionByID method.
+	GetCollectionByIDFunc func(ctx context.Context, id string) (*models.Collection, error)
+
 	// GetCollectionByNameFunc mocks the GetCollectionByName method.
 	GetCollectionByNameFunc func(ctx context.Context, name string) (*models.Collection, error)
 
@@ -54,6 +60,13 @@ type CollectionStoreMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// GetCollectionByID holds details about calls to the GetCollectionByID method.
+		GetCollectionByID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID string
+		}
 		// GetCollectionByName holds details about calls to the GetCollectionByName method.
 		GetCollectionByName []struct {
 			// Ctx is the ctx argument value.
@@ -83,10 +96,46 @@ type CollectionStoreMock struct {
 			Collection *models.Collection
 		}
 	}
+	lockGetCollectionByID   sync.RWMutex
 	lockGetCollectionByName sync.RWMutex
 	lockGetCollectionEvents sync.RWMutex
 	lockGetCollections      sync.RWMutex
 	lockUpsertCollection    sync.RWMutex
+}
+
+// GetCollectionByID calls GetCollectionByIDFunc.
+func (mock *CollectionStoreMock) GetCollectionByID(ctx context.Context, id string) (*models.Collection, error) {
+	if mock.GetCollectionByIDFunc == nil {
+		panic("CollectionStoreMock.GetCollectionByIDFunc: method is nil but CollectionStore.GetCollectionByID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  string
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockGetCollectionByID.Lock()
+	mock.calls.GetCollectionByID = append(mock.calls.GetCollectionByID, callInfo)
+	mock.lockGetCollectionByID.Unlock()
+	return mock.GetCollectionByIDFunc(ctx, id)
+}
+
+// GetCollectionByIDCalls gets all the calls that were made to GetCollectionByID.
+// Check the length with:
+//     len(mockedCollectionStore.GetCollectionByIDCalls())
+func (mock *CollectionStoreMock) GetCollectionByIDCalls() []struct {
+	Ctx context.Context
+	ID  string
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  string
+	}
+	mock.lockGetCollectionByID.RLock()
+	calls = mock.calls.GetCollectionByID
+	mock.lockGetCollectionByID.RUnlock()
+	return calls
 }
 
 // GetCollectionByName calls GetCollectionByNameFunc.
