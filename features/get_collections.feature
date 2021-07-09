@@ -38,6 +38,25 @@ Feature: Get Collections
             }
             """
 
+    Scenario: GET /collections when no collections exist
+            Given I have these collections:
+                """
+                []
+                """
+            When I GET "/collections"
+            Then the HTTP status code should be "200"
+            And the response header "Content-Type" should be "application/json; charset=utf-8"
+            And I should receive the following JSON response:
+                """
+                {
+                    "count": 0,
+                    "limit": 20,
+                    "offset": 0,
+                    "total_count": 0,
+                    "items": []
+                }
+                """
+
     Scenario: GET /collections with order
         Given I have these collections:
             """
