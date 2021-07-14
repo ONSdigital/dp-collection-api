@@ -28,6 +28,46 @@ var (
 	totalCount = 3
 )
 
+var expectedCollection = models.Collection{
+	ID:          "123",
+	Name:        "collection 1",
+	PublishDate: &time.Time{},
+	LastUpdated: time.Time{},
+}
+
+func TestGetCollection(t *testing.T) {
+	Convey("Given a request to GET a collection with id collection_id", t, func() {
+		collectionStore := mockCollectionStore()
+
+		r := httptest.NewRequest("GET", "http://localhost:26000/collections/123", nil)
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), &pagination.Paginator{} , collectionStore)
+			api.GetCollectionHandler(w, r)
+
+			Convey("Then the collection store is called to get collection data", func() {
+				So(len(collectionStore.GetCollectionByIDCalls()), ShouldEqual, 1)
+			})
+
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusOK)
+			})
+
+			Convey("Then the response body should contain the collection", func() {
+				body, err := ioutil.ReadAll(w.Body)
+				So(err, ShouldBeNil)
+				response := models.Collection{}
+				err = json.Unmarshal(body, &response)
+				So(err, ShouldBeNil)
+				So(response, ShouldResemble, expectedCollection)
+			})
+		})
+	})
+
+}
+
 func TestGetCollections(t *testing.T) {
 
 	Convey("Given a request to GET collections", t, func() {
@@ -572,7 +612,12 @@ func mockCollectionStore() *mock.CollectionStoreMock {
 			}}, totalCount, nil
 		},
 		GetCollectionByIDFunc: func(ctx context.Context, id string) (*models.Collection, error) {
-			return nil, nil
+			return &models.Collection{
+				ID:          "123",
+				Name:        "collection 1",
+				PublishDate: &time.Time{},
+				LastUpdated: time.Time{},
+			}, nil
 		},
 	}
 

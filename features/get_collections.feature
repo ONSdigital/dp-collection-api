@@ -225,3 +225,31 @@ Feature: Get Collections
             "publish_date": "2020-05-10T14:58:29.317Z"
         }
         """
+
+    Scenario: GET a specific collection that does not exist
+        Given I have these collections:
+        """
+            [
+                {
+                    "id": "abc124",
+                    "name": "LMSV2",
+                    "publish_date": "2020-05-05T14:58:29.317Z"
+                },
+                {
+                    "id": "abc125",
+                    "name": "LMSV3",
+                    "publish_date": "2020-05-08T14:58:29.317Z"
+                }
+            ]
+        """
+
+
+        When I GET "/collections/abc123"
+        Then the HTTP status code should be "404"
+        And the response header "Content-Type" should be "application/json; charset=utf-8"
+        And I should receive the following JSON response:
+        """
+        {
+            "errors":[ {"message":  "collection not found"}]
+        }
+        """
