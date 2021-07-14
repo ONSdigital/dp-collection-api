@@ -192,3 +192,36 @@ Feature: Get Collections
                 "errors":[ {"message":  "name search text is >64 chars"}]
             }
             """
+
+    Scenario: GET a specific collection
+        Given I have these collections:
+        """
+            [
+                {
+                    "id": "abc123",
+                    "name": "LMSV1",
+                    "publish_date": "2020-05-10T14:58:29.317Z"
+                },
+                {
+                    "id": "abc124",
+                    "name": "LMSV2",
+                    "publish_date": "2020-05-05T14:58:29.317Z"
+                },
+                {
+                    "id": "abc125",
+                    "name": "LMSV3",
+                    "publish_date": "2020-05-08T14:58:29.317Z"
+                }
+            ]
+        """
+        When I GET "/collections/abc123"
+        Then the HTTP status code should be "200"
+        And the response header "Content-Type" should be "application/json; charset=utf-8"
+        And I should receive the following JSON response:
+        """
+        {
+            "id": "abc123",
+            "name": "LMSV1",
+            "publish_date": "2020-05-10T14:58:29.317Z"
+        }
+        """

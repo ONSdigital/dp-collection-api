@@ -46,6 +46,15 @@ func (api *API) GetCollectionsHandler(w http.ResponseWriter, req *http.Request) 
 	WriteJSONBody(ctx, response, w, logData)
 }
 
+func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	logData := log.Data{}
+
+	response := models.Collection{}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	WriteJSONBody(ctx, response, w, logData)
+}
+
 func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer dphttp.DrainBody(r)
