@@ -9,6 +9,7 @@ import (
 	"github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -50,9 +51,17 @@ func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	logData := log.Data{}
 
-	response := models.Collection{}
+	collectionID := mux.Vars(req)["collection_id"]
+	logData["collection_id"] = collectionID
+
+	collection, err := api.collectionStore.GetCollectionByID(ctx, collectionID)
+	if err != nil {
+		handleError(ctx, collections.ErrCollectionNotFound, w, logData)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	WriteJSONBody(ctx, response, w, logData)
+	WriteJSONBody(ctx, collection, w, logData)
 }
 
 func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
