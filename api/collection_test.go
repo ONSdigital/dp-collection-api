@@ -27,9 +27,9 @@ var (
 	limit      = 1
 	totalCount = 3
 )
-
+var collectionID = "00112233-4455-6677-8899-aabbccddeeff"
 var expectedCollection = models.Collection{
-	ID:          "123",
+	ID:          collectionID,
 	Name:        "collection 1",
 	PublishDate: &time.Time{},
 	LastUpdated: time.Time{},
@@ -39,12 +39,18 @@ func TestGetCollection(t *testing.T) {
 	Convey("Given a request to GET a collection with id collection_id", t, func() {
 		collectionStore := mockCollectionStore()
 
-		r := httptest.NewRequest("GET", "http://localhost:26000/collections/123", nil)
+		r := httptest.NewRequest("GET", "http://localhost:26000/collections/"+collectionID, nil)
 		w := httptest.NewRecorder()
 
 		Convey("When the request is sent to the API", func() {
 
 			api := api.Setup(context.Background(), mux.NewRouter(), &pagination.Paginator{}, collectionStore)
+
+			expectedUrlVars := map[string]string{
+				"collection_id": collectionID,
+			}
+			r = mux.SetURLVars(r, expectedUrlVars)
+
 			api.GetCollectionHandler(w, r)
 
 			Convey("Then the collection store is called to get collection data", func() {
@@ -613,7 +619,7 @@ func mockCollectionStore() *mock.CollectionStoreMock {
 		},
 		GetCollectionByIDFunc: func(ctx context.Context, id string) (*models.Collection, error) {
 			return &models.Collection{
-				ID:          "123",
+				ID:          collectionID,
 				Name:        "collection 1",
 				PublishDate: &time.Time{},
 				LastUpdated: time.Time{},
