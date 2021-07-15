@@ -15,6 +15,7 @@ parameters:
     in: path
     required: true
     type: string
+    format: uuid
   limit:
     name: limit
     description: "Maximum number of items that will be returned. A value of zero will return zero items."

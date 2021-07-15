@@ -44,7 +44,7 @@ func TestGetCollection(t *testing.T) {
 
 		Convey("When the request is sent to the API", func() {
 
-			api := api.Setup(context.Background(), mux.NewRouter(), &pagination.Paginator{} , collectionStore)
+			api := api.Setup(context.Background(), mux.NewRouter(), &pagination.Paginator{}, collectionStore)
 			api.GetCollectionHandler(w, r)
 
 			Convey("Then the collection store is called to get collection data", func() {

@@ -56,3 +56,12 @@ var NewID = func() (string, error) {
 
 	return uuid.String(), nil
 }
+
+// ValidateUUID returns an error if the string cannot be converted to a valid UUID
+func ValidateUUID(s string) error {
+	_, err := uuid.FromString(s)
+	if err != nil {
+		return err
+	}
+	return nil
+}

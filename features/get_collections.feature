@@ -198,29 +198,29 @@ Feature: Get Collections
         """
             [
                 {
-                    "id": "abc123",
+                    "id": "00112233-4455-6677-8899-aabbccddeeff",
                     "name": "LMSV1",
                     "publish_date": "2020-05-10T14:58:29.317Z"
                 },
                 {
-                    "id": "abc124",
+                    "id": "10112233-4455-6677-8899-aabbccddeeff",
                     "name": "LMSV2",
                     "publish_date": "2020-05-05T14:58:29.317Z"
                 },
                 {
-                    "id": "abc125",
+                    "id": "20112233-4455-6677-8899-aabbccddeeff",
                     "name": "LMSV3",
                     "publish_date": "2020-05-08T14:58:29.317Z"
                 }
             ]
         """
-        When I GET "/collections/abc123"
+        When I GET "/collections/00112233-4455-6677-8899-aabbccddeeff"
         Then the HTTP status code should be "200"
         And the response header "Content-Type" should be "application/json; charset=utf-8"
         And I should receive the following JSON response:
         """
         {
-            "id": "abc123",
+            "id": "00112233-4455-6677-8899-aabbccddeeff",
             "name": "LMSV1",
             "publish_date": "2020-05-10T14:58:29.317Z"
         }
@@ -231,12 +231,12 @@ Feature: Get Collections
         """
             [
                 {
-                    "id": "abc124",
+                    "id": "10112233-4455-6677-8899-aabbccddeeff",
                     "name": "LMSV2",
                     "publish_date": "2020-05-05T14:58:29.317Z"
                 },
                 {
-                    "id": "abc125",
+                    "id": "20112233-4455-6677-8899-aabbccddeeff",
                     "name": "LMSV3",
                     "publish_date": "2020-05-08T14:58:29.317Z"
                 }
@@ -244,7 +244,7 @@ Feature: Get Collections
         """
 
 
-        When I GET "/collections/abc123"
+        When I GET "/collections/00112233-4455-6677-8899-aabbccddeeff"
         Then the HTTP status code should be "404"
         And the response header "Content-Type" should be "application/json; charset=utf-8"
         And I should receive the following JSON response:

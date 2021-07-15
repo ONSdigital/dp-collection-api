@@ -54,6 +54,11 @@ func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 	collectionID := mux.Vars(req)["collection_id"]
 	logData["collection_id"] = collectionID
 
+	err := ValidateUUID(collectionID)
+	if err != nil {
+		handleError(ctx, collections.ErrInvalidID, w, logData)
+	}
+
 	collection, err := api.collectionStore.GetCollectionByID(ctx, collectionID)
 	if err != nil {
 		handleError(ctx, collections.ErrCollectionNotFound, w, logData)

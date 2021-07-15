@@ -20,6 +20,8 @@ var ErrNilCollection = errors.New("could not validate a nil collection")
 // ErrCollectionNotFound is the error used when a particular collection is not found
 var ErrCollectionNotFound = errors.New("collection not found")
 
+var ErrInvalidID = errors.New("collection id must be valid UUID")
+
 // QueryParams represents the query parameters that can be sent to get collections
 type QueryParams struct {
 	Offset     int

@@ -19,6 +19,7 @@ var (
 		collections.ErrInvalidOrderBy:        true,
 		collections.ErrNameSearchTooLong:     true,
 		collections.ErrCollectionNameEmpty:   true,
+		collections.ErrInvalidID:             true,
 		ErrUnableToParseJSON:                 true,
 	}
 
