@@ -28,6 +28,8 @@ var (
 	totalCount = 3
 )
 var collectionID = "00112233-4455-6677-8899-aabbccddeeff"
+var invalidCollectionID = "abc123"
+
 var expectedCollection = models.Collection{
 	ID:          collectionID,
 	Name:        "collection 1",
@@ -68,6 +70,46 @@ func TestGetCollection(t *testing.T) {
 				err = json.Unmarshal(body, &response)
 				So(err, ShouldBeNil)
 				So(response, ShouldResemble, expectedCollection)
+			})
+		})
+	})
+
+}
+
+func TestGetCollection_invalidUUID(t *testing.T) {
+	Convey("Given a request to GET a collection with an invalid UUID", t, func() {
+		collectionStore := mockCollectionStore()
+
+		r := httptest.NewRequest("GET", "http://localhost:26000/collections/"+invalidCollectionID, nil)
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), &pagination.Paginator{}, collectionStore)
+
+			expectedUrlVars := map[string]string{
+				"collection_id": invalidCollectionID,
+			}
+			r = mux.SetURLVars(r, expectedUrlVars)
+
+			api.GetCollectionHandler(w, r)
+
+			Convey("Then the collection store is not called", func() {
+				So(len(collectionStore.GetCollectionByIDCalls()), ShouldEqual, 0)
+			})
+
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusBadRequest)
+			})
+
+			Convey("Then the response body should contain the expected error response", func() {
+				body, err := ioutil.ReadAll(w.Body)
+				So(err, ShouldBeNil)
+				response := models.ErrorsResponse{}
+				err = json.Unmarshal(body, &response)
+				So(err, ShouldBeNil)
+				So(len(response.Errors), ShouldEqual, 1)
+				So(response.Errors[0].Message, ShouldEqual, collections.ErrInvalidID.Error())
 			})
 		})
 	})

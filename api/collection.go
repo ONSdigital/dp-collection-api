@@ -57,6 +57,7 @@ func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 	err := ValidateUUID(collectionID)
 	if err != nil {
 		handleError(ctx, collections.ErrInvalidID, w, logData)
+		return
 	}
 
 	collection, err := api.collectionStore.GetCollectionByID(ctx, collectionID)
