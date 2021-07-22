@@ -70,13 +70,13 @@ func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 	WriteJSONBody(ctx, collection, w, logData)
 }
 
-func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
+func (api *API) AddCollectionHandler(w http.ResponseWriter, req *http.Request) {
 
-	defer dphttp.DrainBody(r)
-	ctx := r.Context()
+	defer dphttp.DrainBody(req)
+	ctx := req.Context()
 	logData := log.Data{}
 
-	collection, err := ParseCollection(ctx, r.Body)
+	collection, err := ParseCollection(ctx, req.Body)
 	if err != nil {
 		handleError(ctx, err, w, logData)
 		return
@@ -94,6 +94,41 @@ func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	err = WriteJSONBody(ctx, collection, w, logData)
+	if err != nil {
+		handleError(ctx, err, w, logData)
+		return
+	}
+
+	log.Event(ctx, "add collection request completed successfully", log.INFO, logData)
+}
+
+func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
+	defer dphttp.DrainBody(req)
+
+	ctx := req.Context()
+	logData := log.Data{}
+	log.Event(ctx, "put collection", log.INFO, logData)
+
+	b, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return
+	}
+
+	var collection models.Collection
+
+	err = json.Unmarshal(b, &collection)
+	if err != nil {
+		log.Error(ctx, "failed to parse collection json body", err)
+		return
+	}
+
+	if err := api.collectionStore.UpsertCollection(ctx, &collection); err != nil {
+		handleError(ctx, err, w, logData)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	err = WriteJSONBody(ctx, collection, w, logData)
 	if err != nil {
 		handleError(ctx, err, w, logData)
