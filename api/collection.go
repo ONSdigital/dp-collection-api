@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
+	"github.com/ONSdigital/dp-collection-api/mongo"
 	"github.com/ONSdigital/dp-collection-api/pagination"
 	"github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	dphttp "github.com/ONSdigital/dp-net/http"
@@ -50,6 +51,7 @@ func (api *API) GetCollectionsHandler(w http.ResponseWriter, req *http.Request) 
 func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	logData := log.Data{}
+	eTag := getIfMatch(req)
 
 	collectionID := mux.Vars(req)["collection_id"]
 	logData["collection_id"] = collectionID
@@ -60,8 +62,12 @@ func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	collection, err := api.collectionStore.GetCollectionByID(ctx, collectionID)
+	collection, err := api.collectionStore.GetCollectionByID(ctx, collectionID, eTag)
 	if err != nil {
+		if err.Error() == "conflict when retrieving the Collection" {
+			handleError(ctx, collections.ErrCollectionConflict, w, logData)
+			return
+		}
 		handleError(ctx, collections.ErrCollectionNotFound, w, logData)
 		return
 	}
@@ -173,6 +179,14 @@ func readCollectionsQueryParams(req *http.Request, paginator Paginator) (*collec
 		OrderBy:    orderBy,
 		NameSearch: nameSearchInput,
 	}, nil
+}
+
+func getIfMatch(r *http.Request) string {
+	ifMatch := r.Header.Get("If-Match")
+	if ifMatch == "" {
+		return mongo.AnyETag
+	}
+	return ifMatch
 }
 
 func setETag(w http.ResponseWriter, eTag string) {

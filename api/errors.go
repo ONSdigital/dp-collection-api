@@ -29,6 +29,7 @@ var (
 
 	conflictRequest = map[error]bool{
 		collections.ErrCollectionNameAlreadyExists: true,
+		collections.ErrCollectionConflict:          true,
 	}
 
 	ErrUnableToParseJSON = errors.New("failed to parse json body")

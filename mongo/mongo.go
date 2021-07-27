@@ -139,7 +139,7 @@ func (m *Mongo) GetCollectionByName(ctx context.Context, name string) (*models.C
 }
 
 // GetCollectionByID retrieves a single collection by ID
-func (m *Mongo) GetCollectionByID(ctx context.Context, id string) (*models.Collection, error) {
+func (m *Mongo) GetCollectionByID(ctx context.Context, id string, eTagSelector string) (*models.Collection, error) {
 
 	query := bson.D{{"_id", id}}
 	result := &models.Collection{}
@@ -149,6 +149,11 @@ func (m *Mongo) GetCollectionByID(ctx context.Context, id string) (*models.Colle
 		FindOne(ctx, query, result)
 	if err != nil {
 		return nil, err
+	}
+
+	// If eTag was provided and did not match, return the corresponding error
+	if eTagSelector != AnyETag && eTagSelector != result.ETag {
+		return nil, errors.New("conflict when retrieving the Collection")
 	}
 
 	return result, nil

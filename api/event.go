@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
+	"github.com/ONSdigital/dp-collection-api/mongo"
 	"github.com/ONSdigital/dp-collection-api/pagination"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
@@ -21,7 +22,7 @@ func (api *API) GetEventsHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	logData["query_params"] = queryParams
 
-	_, err = api.collectionStore.GetCollectionByID(ctx, queryParams.CollectionID)
+	_, err = api.collectionStore.GetCollectionByID(ctx, queryParams.CollectionID, mongo.AnyETag)
 	if err != nil {
 		handleError(ctx, collections.ErrCollectionNotFound, w, logData)
 		return

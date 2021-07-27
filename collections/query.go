@@ -22,6 +22,9 @@ var ErrCollectionNotFound = errors.New("collection not found")
 
 var ErrInvalidID = errors.New("collection id must be valid UUID")
 
+// ErrCollectionConflict is the error used when the provided eTag does not match
+var ErrCollectionConflict = errors.New("collection conflict")
+
 // QueryParams represents the query parameters that can be sent to get collections
 type QueryParams struct {
 	Offset     int
