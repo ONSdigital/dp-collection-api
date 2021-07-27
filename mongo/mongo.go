@@ -156,6 +156,13 @@ func (m *Mongo) GetCollectionByID(ctx context.Context, id string) (*models.Colle
 
 // UpsertCollection adds or updates a collection
 func (m *Mongo) UpsertCollection(ctx context.Context, collection *models.Collection) error {
+	var err error
+
+	// set eTag value to current hash of the collection
+	collection.ETag, err = collection.Hash(nil)
+	if err != nil {
+		return err
+	}
 
 	update := bson.M{
 		"$set": collection,
@@ -164,7 +171,7 @@ func (m *Mongo) UpsertCollection(ctx context.Context, collection *models.Collect
 		},
 	}
 
-	_, err := m.Connection.C(m.CollectionsCollection).UpsertId(ctx, collection.ID, update)
+	_, err = m.Connection.C(m.CollectionsCollection).UpsertId(ctx, collection.ID, update)
 
 	return err
 }

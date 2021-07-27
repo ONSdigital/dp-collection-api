@@ -12,6 +12,7 @@ require (
 	github.com/ONSdigital/log.go/v2 v2.0.0
 	github.com/benweissmann/memongo v0.1.1
 	github.com/cucumber/godog v0.11.0
+	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gorilla/mux v1.8.0
 	github.com/kelseyhightower/envconfig v1.4.0
