@@ -93,6 +93,7 @@ func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setETag(w, collection.ETag)
 	w.WriteHeader(http.StatusCreated)
 	err = WriteJSONBody(ctx, collection, w, logData)
 	if err != nil {
@@ -172,4 +173,8 @@ func readCollectionsQueryParams(req *http.Request, paginator Paginator) (*collec
 		OrderBy:    orderBy,
 		NameSearch: nameSearchInput,
 	}, nil
+}
+
+func setETag(w http.ResponseWriter, eTag string) {
+	w.Header().Set("ETag", eTag)
 }
