@@ -21,7 +21,7 @@ var _ api.CollectionStore = &CollectionStoreMock{}
 //
 //         // make and configure a mocked api.CollectionStore
 //         mockedCollectionStore := &CollectionStoreMock{
-//             GetCollectionByIDFunc: func(ctx context.Context, id string) (*models.Collection, error) {
+//             GetCollectionByIDFunc: func(ctx context.Context, id string, eTagSelector string) (*models.Collection, error) {
 // 	               panic("mock out the GetCollectionByID method")
 //             },
 //             GetCollectionByNameFunc: func(ctx context.Context, name string) (*models.Collection, error) {
@@ -44,7 +44,7 @@ var _ api.CollectionStore = &CollectionStoreMock{}
 //     }
 type CollectionStoreMock struct {
 	// GetCollectionByIDFunc mocks the GetCollectionByID method.
-	GetCollectionByIDFunc func(ctx context.Context, id string) (*models.Collection, error)
+	GetCollectionByIDFunc func(ctx context.Context, id string, eTagSelector string) (*models.Collection, error)
 
 	// GetCollectionByNameFunc mocks the GetCollectionByName method.
 	GetCollectionByNameFunc func(ctx context.Context, name string) (*models.Collection, error)
@@ -66,6 +66,8 @@ type CollectionStoreMock struct {
 			Ctx context.Context
 			// ID is the id argument value.
 			ID string
+			// ETagSelector is the eTagSelector argument value.
+			ETagSelector string
 		}
 		// GetCollectionByName holds details about calls to the GetCollectionByName method.
 		GetCollectionByName []struct {
@@ -104,33 +106,37 @@ type CollectionStoreMock struct {
 }
 
 // GetCollectionByID calls GetCollectionByIDFunc.
-func (mock *CollectionStoreMock) GetCollectionByID(ctx context.Context, id string) (*models.Collection, error) {
+func (mock *CollectionStoreMock) GetCollectionByID(ctx context.Context, id string, eTagSelector string) (*models.Collection, error) {
 	if mock.GetCollectionByIDFunc == nil {
 		panic("CollectionStoreMock.GetCollectionByIDFunc: method is nil but CollectionStore.GetCollectionByID was just called")
 	}
 	callInfo := struct {
-		Ctx context.Context
-		ID  string
+		Ctx          context.Context
+		ID           string
+		ETagSelector string
 	}{
-		Ctx: ctx,
-		ID:  id,
+		Ctx:          ctx,
+		ID:           id,
+		ETagSelector: eTagSelector,
 	}
 	mock.lockGetCollectionByID.Lock()
 	mock.calls.GetCollectionByID = append(mock.calls.GetCollectionByID, callInfo)
 	mock.lockGetCollectionByID.Unlock()
-	return mock.GetCollectionByIDFunc(ctx, id)
+	return mock.GetCollectionByIDFunc(ctx, id, eTagSelector)
 }
 
 // GetCollectionByIDCalls gets all the calls that were made to GetCollectionByID.
 // Check the length with:
 //     len(mockedCollectionStore.GetCollectionByIDCalls())
 func (mock *CollectionStoreMock) GetCollectionByIDCalls() []struct {
-	Ctx context.Context
-	ID  string
+	Ctx          context.Context
+	ID           string
+	ETagSelector string
 } {
 	var calls []struct {
-		Ctx context.Context
-		ID  string
+		Ctx          context.Context
+		ID           string
+		ETagSelector string
 	}
 	mock.lockGetCollectionByID.RLock()
 	calls = mock.calls.GetCollectionByID

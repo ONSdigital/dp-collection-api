@@ -659,12 +659,13 @@ func mockCollectionStore() *mock.CollectionStoreMock {
 				CollectionID: "123",
 			}}, totalCount, nil
 		},
-		GetCollectionByIDFunc: func(ctx context.Context, id string) (*models.Collection, error) {
+		GetCollectionByIDFunc: func(ctx context.Context, id string, eTagSelector string) (*models.Collection, error) {
 			return &models.Collection{
 				ID:          collectionID,
 				Name:        "collection 1",
 				PublishDate: &time.Time{},
 				LastUpdated: time.Time{},
+				ETag:        "eTag",
 			}, nil
 		},
 	}

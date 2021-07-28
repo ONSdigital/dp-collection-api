@@ -28,7 +28,7 @@ var _ service.MongoDB = &MongoDBMock{}
 //             CloseFunc: func(in1 context.Context) error {
 // 	               panic("mock out the Close method")
 //             },
-//             GetCollectionByIDFunc: func(ctx context.Context, id string) (*models.Collection, error) {
+//             GetCollectionByIDFunc: func(ctx context.Context, id string, eTagSelector string) (*models.Collection, error) {
 // 	               panic("mock out the GetCollectionByID method")
 //             },
 //             GetCollectionByNameFunc: func(ctx context.Context, name string) (*models.Collection, error) {
@@ -57,7 +57,7 @@ type MongoDBMock struct {
 	CloseFunc func(in1 context.Context) error
 
 	// GetCollectionByIDFunc mocks the GetCollectionByID method.
-	GetCollectionByIDFunc func(ctx context.Context, id string) (*models.Collection, error)
+	GetCollectionByIDFunc func(ctx context.Context, id string, eTagSelector string) (*models.Collection, error)
 
 	// GetCollectionByNameFunc mocks the GetCollectionByName method.
 	GetCollectionByNameFunc func(ctx context.Context, name string) (*models.Collection, error)
@@ -91,6 +91,8 @@ type MongoDBMock struct {
 			Ctx context.Context
 			// ID is the id argument value.
 			ID string
+			// ETagSelector is the eTagSelector argument value.
+			ETagSelector string
 		}
 		// GetCollectionByName holds details about calls to the GetCollectionByName method.
 		GetCollectionByName []struct {
@@ -197,33 +199,37 @@ func (mock *MongoDBMock) CloseCalls() []struct {
 }
 
 // GetCollectionByID calls GetCollectionByIDFunc.
-func (mock *MongoDBMock) GetCollectionByID(ctx context.Context, id string) (*models.Collection, error) {
+func (mock *MongoDBMock) GetCollectionByID(ctx context.Context, id string, eTagSelector string) (*models.Collection, error) {
 	if mock.GetCollectionByIDFunc == nil {
 		panic("MongoDBMock.GetCollectionByIDFunc: method is nil but MongoDB.GetCollectionByID was just called")
 	}
 	callInfo := struct {
-		Ctx context.Context
-		ID  string
+		Ctx          context.Context
+		ID           string
+		ETagSelector string
 	}{
-		Ctx: ctx,
-		ID:  id,
+		Ctx:          ctx,
+		ID:           id,
+		ETagSelector: eTagSelector,
 	}
 	mock.lockGetCollectionByID.Lock()
 	mock.calls.GetCollectionByID = append(mock.calls.GetCollectionByID, callInfo)
 	mock.lockGetCollectionByID.Unlock()
-	return mock.GetCollectionByIDFunc(ctx, id)
+	return mock.GetCollectionByIDFunc(ctx, id, eTagSelector)
 }
 
 // GetCollectionByIDCalls gets all the calls that were made to GetCollectionByID.
 // Check the length with:
 //     len(mockedMongoDB.GetCollectionByIDCalls())
 func (mock *MongoDBMock) GetCollectionByIDCalls() []struct {
-	Ctx context.Context
-	ID  string
+	Ctx          context.Context
+	ID           string
+	ETagSelector string
 } {
 	var calls []struct {
-		Ctx context.Context
-		ID  string
+		Ctx          context.Context
+		ID           string
+		ETagSelector string
 	}
 	mock.lockGetCollectionByID.RLock()
 	calls = mock.calls.GetCollectionByID
