@@ -435,8 +435,8 @@ func TestPostCollection(t *testing.T) {
 				So(len(collectionStore.GetCollectionByNameCalls()), ShouldEqual, 1)
 				So(collectionStore.GetCollectionByNameCalls()[0].Name, ShouldEqual, expectedName)
 
-				So(len(collectionStore.UpsertCollectionCalls()), ShouldEqual, 1)
-				getCollectionsCall := collectionStore.UpsertCollectionCalls()[0]
+				So(len(collectionStore.AddCollectionCalls()), ShouldEqual, 1)
+				getCollectionsCall := collectionStore.AddCollectionCalls()[0]
 				So(getCollectionsCall.Collection.ID, ShouldEqual, expectedID)
 				So(getCollectionsCall.Collection.Name, ShouldEqual, expectedName)
 				So(getCollectionsCall.Collection.PublishDate.String(), ShouldEqual, "2020-05-05 14:58:29.317 +0000 UTC")
@@ -580,7 +580,7 @@ func TestPostCollection_storeError(t *testing.T) {
 		paginator := mockPaginator()
 		collectionStore := mockCollectionStore()
 
-		collectionStore.UpsertCollectionFunc = func(ctx context.Context, collection *models.Collection) error {
+		collectionStore.AddCollectionFunc = func(ctx context.Context, collection *models.Collection) error {
 			return errors.New("db is broken")
 		}
 
@@ -644,7 +644,7 @@ func mockCollectionStore() *mock.CollectionStoreMock {
 				LastUpdated: time.Time{},
 			}}, totalCount, nil
 		},
-		UpsertCollectionFunc: func(ctx context.Context, collection *models.Collection) error {
+		AddCollectionFunc: func(ctx context.Context, collection *models.Collection) error {
 			return nil
 		},
 		GetCollectionByNameFunc: func(ctx context.Context, name string) (*models.Collection, error) {

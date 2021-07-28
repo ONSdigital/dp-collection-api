@@ -169,6 +169,32 @@ paths:
           description: "Collection not found matching the id provided"
         500:
           $ref: '#/responses/InternalError'
+    put:
+      summary: "Update a collection"
+      description: "Update the collection, e.g. by changing the publish_date"
+      parameters:
+        - $ref: '#/parameters/submitted'
+        - $ref: '#/parameters/update_filter'
+        - $ref: '#/parameters/if_match'
+      responses:
+        200:
+          description: "The filter job has been updated"
+          schema:
+            $ref: '#/definitions/UpdateFilterResponse'
+          headers:
+            ETag:
+              type: string
+              description: "Defines a unique filter resource version"
+        400:
+          description: "Invalid request body or If-Match header not provided"
+        404:
+          $ref: '#/responses/FilterNotFound'
+        409:
+          description: '#/responses/FilterConflict'
+        422:
+          description: "Unprocessable entity - instance has been removed"
+        500:
+          $ref: '#/responses/InternalError'
   /collections/{collection_id}/events:
     get:
       summary: "Gets events for a collection"

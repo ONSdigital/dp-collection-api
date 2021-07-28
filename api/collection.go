@@ -72,6 +72,7 @@ func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	setETag(w, collection.ETag)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	WriteJSONBody(ctx, collection, w, logData)
 }
@@ -94,13 +95,57 @@ func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = api.collectionStore.UpsertCollection(ctx, collection); err != nil {
+	if err = api.collectionStore.AddCollection(ctx, collection); err != nil {
 		handleError(ctx, err, w, logData)
 		return
 	}
 
 	setETag(w, collection.ETag)
 	w.WriteHeader(http.StatusCreated)
+	err = WriteJSONBody(ctx, collection, w, logData)
+	if err != nil {
+		handleError(ctx, err, w, logData)
+		return
+	}
+
+	log.Event(ctx, "add collection request completed successfully", log.INFO, logData)
+}
+
+func (api *API) PatchCollectionHandler(w http.ResponseWriter, req *http.Request) {
+	defer dphttp.DrainBody(req)
+
+	ctx := req.Context()
+	logData := log.Data{}
+	collectionID := mux.Vars(req)["collection_id"]
+	logData["collection_id"] = collectionID
+
+	log.Event(ctx, "patch collection", log.INFO, logData)
+
+	// eTag value must be present in If-Match header
+	eTag, err := getIfMatchForce(req)
+	if err != nil {
+		log.Event(ctx, "missing header", log.ERROR, log.Data{"error": err.Error()})
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	collection, err := ParseCollection(ctx, req.Body)
+	if err != nil {
+		handleError(ctx, err, w, logData)
+		return
+	}
+
+	var newETag string
+
+	currentCollection, err := api.collectionStore.GetCollectionByID(ctx, collectionID, eTag)
+
+	if newETag, err = api.collectionStore.UpdateCollection(ctx, collection, eTag, currentCollection); err != nil {
+		handleError(ctx, err, w, logData)
+		return
+	}
+
+	setETag(w, newETag)
+	w.WriteHeader(http.StatusOK)
 	err = WriteJSONBody(ctx, collection, w, logData)
 	if err != nil {
 		handleError(ctx, err, w, logData)
@@ -191,4 +236,13 @@ func getIfMatch(r *http.Request) string {
 
 func setETag(w http.ResponseWriter, eTag string) {
 	w.Header().Set("ETag", eTag)
+}
+
+func getIfMatchForce(r *http.Request) (string, error) {
+	eTag := getIfMatch(r)
+	if eTag == "" {
+		err := collections.ErrNoIfMatchHeader
+		return "", err
+	}
+	return eTag, nil
 }

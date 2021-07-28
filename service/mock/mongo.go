@@ -22,6 +22,9 @@ var _ service.MongoDB = &MongoDBMock{}
 //
 //         // make and configure a mocked service.MongoDB
 //         mockedMongoDB := &MongoDBMock{
+//             AddCollectionFunc: func(ctx context.Context, collection *models.Collection) error {
+// 	               panic("mock out the AddCollection method")
+//             },
 //             CheckerFunc: func(in1 context.Context, in2 *healthcheck.CheckState) error {
 // 	               panic("mock out the Checker method")
 //             },
@@ -40,8 +43,8 @@ var _ service.MongoDB = &MongoDBMock{}
 //             GetCollectionsFunc: func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 // 	               panic("mock out the GetCollections method")
 //             },
-//             UpsertCollectionFunc: func(ctx context.Context, collection *models.Collection) error {
-// 	               panic("mock out the UpsertCollection method")
+//             UpdateCollectionFunc: func(ctx context.Context, collection *models.Collection, eTagSelector string, currentCollection *models.Collection) (string, error) {
+// 	               panic("mock out the UpdateCollection method")
 //             },
 //         }
 //
@@ -50,6 +53,9 @@ var _ service.MongoDB = &MongoDBMock{}
 //
 //     }
 type MongoDBMock struct {
+	// AddCollectionFunc mocks the AddCollection method.
+	AddCollectionFunc func(ctx context.Context, collection *models.Collection) error
+
 	// CheckerFunc mocks the Checker method.
 	CheckerFunc func(in1 context.Context, in2 *healthcheck.CheckState) error
 
@@ -68,11 +74,18 @@ type MongoDBMock struct {
 	// GetCollectionsFunc mocks the GetCollections method.
 	GetCollectionsFunc func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error)
 
-	// UpsertCollectionFunc mocks the UpsertCollection method.
-	UpsertCollectionFunc func(ctx context.Context, collection *models.Collection) error
+	// UpdateCollectionFunc mocks the UpdateCollection method.
+	UpdateCollectionFunc func(ctx context.Context, collection *models.Collection, eTagSelector string, currentCollection *models.Collection) (string, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// AddCollection holds details about calls to the AddCollection method.
+		AddCollection []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Collection is the collection argument value.
+			Collection *models.Collection
+		}
 		// Checker holds details about calls to the Checker method.
 		Checker []struct {
 			// In1 is the in1 argument value.
@@ -115,21 +128,61 @@ type MongoDBMock struct {
 			// QueryParams is the queryParams argument value.
 			QueryParams collections.QueryParams
 		}
-		// UpsertCollection holds details about calls to the UpsertCollection method.
-		UpsertCollection []struct {
+		// UpdateCollection holds details about calls to the UpdateCollection method.
+		UpdateCollection []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Collection is the collection argument value.
 			Collection *models.Collection
+			// ETagSelector is the eTagSelector argument value.
+			ETagSelector string
+			// CurrentCollection is the currentCollection argument value.
+			CurrentCollection *models.Collection
 		}
 	}
+	lockAddCollection       sync.RWMutex
 	lockChecker             sync.RWMutex
 	lockClose               sync.RWMutex
 	lockGetCollectionByID   sync.RWMutex
 	lockGetCollectionByName sync.RWMutex
 	lockGetCollectionEvents sync.RWMutex
 	lockGetCollections      sync.RWMutex
-	lockUpsertCollection    sync.RWMutex
+	lockUpdateCollection    sync.RWMutex
+}
+
+// AddCollection calls AddCollectionFunc.
+func (mock *MongoDBMock) AddCollection(ctx context.Context, collection *models.Collection) error {
+	if mock.AddCollectionFunc == nil {
+		panic("MongoDBMock.AddCollectionFunc: method is nil but MongoDB.AddCollection was just called")
+	}
+	callInfo := struct {
+		Ctx        context.Context
+		Collection *models.Collection
+	}{
+		Ctx:        ctx,
+		Collection: collection,
+	}
+	mock.lockAddCollection.Lock()
+	mock.calls.AddCollection = append(mock.calls.AddCollection, callInfo)
+	mock.lockAddCollection.Unlock()
+	return mock.AddCollectionFunc(ctx, collection)
+}
+
+// AddCollectionCalls gets all the calls that were made to AddCollection.
+// Check the length with:
+//     len(mockedMongoDB.AddCollectionCalls())
+func (mock *MongoDBMock) AddCollectionCalls() []struct {
+	Ctx        context.Context
+	Collection *models.Collection
+} {
+	var calls []struct {
+		Ctx        context.Context
+		Collection *models.Collection
+	}
+	mock.lockAddCollection.RLock()
+	calls = mock.calls.AddCollection
+	mock.lockAddCollection.RUnlock()
+	return calls
 }
 
 // Checker calls CheckerFunc.
@@ -342,37 +395,45 @@ func (mock *MongoDBMock) GetCollectionsCalls() []struct {
 	return calls
 }
 
-// UpsertCollection calls UpsertCollectionFunc.
-func (mock *MongoDBMock) UpsertCollection(ctx context.Context, collection *models.Collection) error {
-	if mock.UpsertCollectionFunc == nil {
-		panic("MongoDBMock.UpsertCollectionFunc: method is nil but MongoDB.UpsertCollection was just called")
+// UpdateCollection calls UpdateCollectionFunc.
+func (mock *MongoDBMock) UpdateCollection(ctx context.Context, collection *models.Collection, eTagSelector string, currentCollection *models.Collection) (string, error) {
+	if mock.UpdateCollectionFunc == nil {
+		panic("MongoDBMock.UpdateCollectionFunc: method is nil but MongoDB.UpdateCollection was just called")
 	}
 	callInfo := struct {
-		Ctx        context.Context
-		Collection *models.Collection
+		Ctx               context.Context
+		Collection        *models.Collection
+		ETagSelector      string
+		CurrentCollection *models.Collection
 	}{
-		Ctx:        ctx,
-		Collection: collection,
+		Ctx:               ctx,
+		Collection:        collection,
+		ETagSelector:      eTagSelector,
+		CurrentCollection: currentCollection,
 	}
-	mock.lockUpsertCollection.Lock()
-	mock.calls.UpsertCollection = append(mock.calls.UpsertCollection, callInfo)
-	mock.lockUpsertCollection.Unlock()
-	return mock.UpsertCollectionFunc(ctx, collection)
+	mock.lockUpdateCollection.Lock()
+	mock.calls.UpdateCollection = append(mock.calls.UpdateCollection, callInfo)
+	mock.lockUpdateCollection.Unlock()
+	return mock.UpdateCollectionFunc(ctx, collection, eTagSelector, currentCollection)
 }
 
-// UpsertCollectionCalls gets all the calls that were made to UpsertCollection.
+// UpdateCollectionCalls gets all the calls that were made to UpdateCollection.
 // Check the length with:
-//     len(mockedMongoDB.UpsertCollectionCalls())
-func (mock *MongoDBMock) UpsertCollectionCalls() []struct {
-	Ctx        context.Context
-	Collection *models.Collection
+//     len(mockedMongoDB.UpdateCollectionCalls())
+func (mock *MongoDBMock) UpdateCollectionCalls() []struct {
+	Ctx               context.Context
+	Collection        *models.Collection
+	ETagSelector      string
+	CurrentCollection *models.Collection
 } {
 	var calls []struct {
-		Ctx        context.Context
-		Collection *models.Collection
+		Ctx               context.Context
+		Collection        *models.Collection
+		ETagSelector      string
+		CurrentCollection *models.Collection
 	}
-	mock.lockUpsertCollection.RLock()
-	calls = mock.calls.UpsertCollection
-	mock.lockUpsertCollection.RUnlock()
+	mock.lockUpdateCollection.RLock()
+	calls = mock.calls.UpdateCollection
+	mock.lockUpdateCollection.RUnlock()
 	return calls
 }

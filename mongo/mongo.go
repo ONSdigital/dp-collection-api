@@ -6,9 +6,12 @@ import (
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	mongo "github.com/ONSdigital/dp-mongodb"
 	dpMongoHealth "github.com/ONSdigital/dp-mongodb/v2/pkg/health"
 	dpMongoDriver "github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/globalsign/mgo"
+	bson2 "github.com/globalsign/mgo/bson"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
@@ -159,10 +162,9 @@ func (m *Mongo) GetCollectionByID(ctx context.Context, id string, eTagSelector s
 	return result, nil
 }
 
-// UpsertCollection adds or updates a collection
-func (m *Mongo) UpsertCollection(ctx context.Context, collection *models.Collection) error {
+// AddCollection adds a collection
+func (m *Mongo) AddCollection(ctx context.Context, collection *models.Collection) error {
 	var err error
-
 	// set eTag value to current hash of the collection
 	collection.ETag, err = collection.Hash(nil)
 	if err != nil {
@@ -179,6 +181,35 @@ func (m *Mongo) UpsertCollection(ctx context.Context, collection *models.Collect
 	_, err = m.Connection.C(m.CollectionsCollection).UpsertId(ctx, collection.ID, update)
 
 	return err
+}
+
+// UpdateCollection updates a collection
+func (m *Mongo) UpdateCollection(ctx context.Context, updatedCollection *models.Collection, eTagSelector string, currentCollection *models.Collection) (newETag string, err error) {
+	// calculate the new eTag hash for the filter that would result from applying the update
+	newETag, err = newETagForUpdate(currentCollection, updatedCollection)
+	if err != nil {
+		return "", err
+	}
+
+	selector := bson.M{
+		"_id":   updatedCollection.ID,
+		"e_tag": eTagSelector,
+	}
+
+	update, err := mongo.WithUpdates(bson2.M(bson.M{
+		"$set": bson.M{
+			"e_tag":        newETag,
+		},
+	}))
+
+	if _, err := m.Connection.C(m.CollectionsCollection).Update(ctx, selector, update); err != nil {
+		if err == mgo.ErrNotFound {
+			return "", collections.ErrCollectionConflict
+		}
+		return "", err
+	}
+
+	return newETag, nil
 }
 
 // GetCollectionEvents retrieves all events for a collection
