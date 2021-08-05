@@ -22,5 +22,3 @@ require (
 	github.com/stretchr/testify v1.7.0 // indirect
 	go.mongodb.org/mongo-driver v1.5.3
 )
-
-replace github.com/ONSdigital/dp-component-test => ../dp-component-test

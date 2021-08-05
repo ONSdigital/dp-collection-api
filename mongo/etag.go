@@ -5,7 +5,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// AnyETag represents the wildchar that corresponds to not check the ETag value for update requests
+// AnyETag represents the wildcard that corresponds to not check the ETag value for update requests
 const AnyETag = "*"
 
 func newETagForUpdate(currentCollection *models.Collection, update *models.Collection) (eTag string, err error) {
