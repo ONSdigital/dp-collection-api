@@ -185,7 +185,7 @@ func (m *Mongo) AddCollection(ctx context.Context, collection *models.Collection
 
 // UpdateCollection updates a collection
 func (m *Mongo) UpdateCollection(ctx context.Context, updatedCollection *models.Collection, eTagSelector string, currentCollection *models.Collection) (newETag string, err error) {
-	// calculate the new eTag hash for the filter that would result from applying the update
+	// calculate the new eTag hash for the collection that would result from applying the update
 	newETag, err = newETagForUpdate(currentCollection, updatedCollection)
 	if err != nil {
 		return "", err
@@ -198,7 +198,7 @@ func (m *Mongo) UpdateCollection(ctx context.Context, updatedCollection *models.
 
 	update, err := mongo.WithUpdates(bson2.M(bson.M{
 		"$set": bson.M{
-			"e_tag":        newETag,
+			"e_tag": newETag,
 		},
 	}))
 

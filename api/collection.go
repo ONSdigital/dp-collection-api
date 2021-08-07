@@ -111,7 +111,7 @@ func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
 	log.Event(ctx, "add collection request completed successfully", log.INFO, logData)
 }
 
-func (api *API) PatchCollectionHandler(w http.ResponseWriter, req *http.Request) {
+func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
 	defer dphttp.DrainBody(req)
 
 	ctx := req.Context()
@@ -119,7 +119,7 @@ func (api *API) PatchCollectionHandler(w http.ResponseWriter, req *http.Request)
 	collectionID := mux.Vars(req)["collection_id"]
 	logData["collection_id"] = collectionID
 
-	log.Event(ctx, "patch collection", log.INFO, logData)
+	log.Event(ctx, "put collection", log.INFO, logData)
 
 	// eTag value must be present in If-Match header
 	eTag, err := getIfMatchForce(req)

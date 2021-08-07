@@ -217,6 +217,7 @@ Feature: Get Collections
         When I GET "/collections/00112233-4455-6677-8899-aabbccddeeff"
         Then the HTTP status code should be "200"
         And the response header "Content-Type" should be "application/json; charset=utf-8"
+        And the response header "Etag" should be "e74a91158a30943ce95a254cb5309b434c06fee4"
         And I should receive the following JSON response:
         """
         {
