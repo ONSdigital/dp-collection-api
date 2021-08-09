@@ -132,6 +132,9 @@ func (m *Mongo) GetCollectionByName(ctx context.Context, name string) (*models.C
 		C(m.CollectionsCollection).
 		FindOne(ctx, query, result)
 	if err != nil {
+		if dpMongoDriver.IsErrNoDocumentFound(err) {
+			return nil, collections.ErrCollectionNotFound
+		}
 		return nil, err
 	}
 
@@ -148,6 +151,10 @@ func (m *Mongo) GetCollectionByID(ctx context.Context, id string, eTagSelector s
 		C(m.CollectionsCollection).
 		FindOne(ctx, query, result)
 	if err != nil {
+		if dpMongoDriver.IsErrNoDocumentFound(err) {
+			return nil, collections.ErrCollectionNotFound
+		}
+
 		return nil, err
 	}
 

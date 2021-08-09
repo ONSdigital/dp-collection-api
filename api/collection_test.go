@@ -8,7 +8,6 @@ import (
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-collection-api/pagination"
-	"github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -901,7 +900,7 @@ func mockCollectionStore() *mock.CollectionStoreMock {
 			return nil
 		},
 		GetCollectionByNameFunc: func(ctx context.Context, name string) (*models.Collection, error) {
-			return nil, &mongodb.ErrNoDocumentFound{}
+			return nil, collections.ErrCollectionNotFound
 		},
 		GetCollectionEventsFunc: func(ctx context.Context, queryParams collections.EventsQueryParams) ([]models.Event, int, error) {
 			return []models.Event{{

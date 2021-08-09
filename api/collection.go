@@ -6,7 +6,6 @@ import (
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-collection-api/pagination"
-	"github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
@@ -67,7 +66,7 @@ func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 			handleError(ctx, collections.ErrCollectionConflict, w, logData)
 			return
 		}
-		handleError(ctx, collections.ErrCollectionNotFound, w, logData)
+		handleError(ctx, err, w, logData)
 		return
 	}
 
@@ -134,11 +133,6 @@ func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
 
 	_, err = api.collectionStore.GetCollectionByID(ctx, collectionID, models.AnyETag)
 	if err != nil {
-		if mongodb.IsErrNoDocumentFound(err) {
-			handleError(ctx, collections.ErrCollectionNotFound, w, logData)
-			return
-		}
-
 		handleError(ctx, err, w, logData)
 		return
 	}
@@ -186,7 +180,7 @@ func (api *API) validateCollection(ctx context.Context, collection *models.Colle
 	}
 
 	_, err := api.collectionStore.GetCollectionByName(ctx, collection.Name)
-	if err != nil && !mongodb.IsErrNoDocumentFound(err) {
+	if err != nil && err != collections.ErrCollectionNotFound {
 		return err
 	}
 	if err == nil {
