@@ -663,6 +663,9 @@ func TestPutCollection(t *testing.T) {
 			api.PutCollectionHandler(w, r)
 
 			Convey("Then the collection store is called with the expected values", func() {
+				So(len(collectionStore.GetCollectionByIDCalls()), ShouldEqual, 1)
+				So(collectionStore.GetCollectionByIDCalls()[0].ID, ShouldEqual, collectionID)
+
 				So(len(collectionStore.ReplaceCollectionCalls()), ShouldEqual, 1)
 
 				savedCollection := collectionStore.ReplaceCollectionCalls()[0].Collection

@@ -132,6 +132,17 @@ func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	_, err = api.collectionStore.GetCollectionByID(ctx, collectionID, models.AnyETag)
+	if err != nil {
+		if mongodb.IsErrNoDocumentFound(err) {
+			handleError(ctx, collections.ErrCollectionNotFound, w, logData)
+			return
+		}
+
+		handleError(ctx, err, w, logData)
+		return
+	}
+
 	// eTag value must be present in If-Match header
 	eTag, err := getIfMatchForce(req)
 	if err != nil {
