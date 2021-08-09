@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+// AnyETag represents the wildcard that corresponds to not check the ETag value for update requests
+const AnyETag = "*"
+
 // Collection represents information related to a single collection
 type Collection struct {
 	ID          string     `bson:"_id,omitempty"          json:"id,omitempty"`
@@ -23,7 +26,7 @@ type CollectionsResponse struct {
 	pagination.PaginatedResponse
 }
 
-// Hash generates a SHA-1 hash of the instance struct. SHA-1 is not cryptographically safe,
+// Hash generates a SHA-1 hash of the collection struct. SHA-1 is not cryptographically safe,
 // but it has been selected for performance as we are only interested in uniqueness.
 // ETag field value is ignored when generating a hash.
 // An optional byte array can be provided to append to the hash.
@@ -45,4 +48,12 @@ func (c *Collection) Hash(extraBytes []byte) (string, error) {
 	}
 
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
+func (c *Collection) NewETagForUpdate(update *Collection) (eTag string, err error) {
+	b, err := bson.Marshal(update)
+	if err != nil {
+		return "", err
+	}
+	return c.Hash(b)
 }

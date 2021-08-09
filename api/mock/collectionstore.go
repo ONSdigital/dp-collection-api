@@ -36,8 +36,8 @@ var _ api.CollectionStore = &CollectionStoreMock{}
 //             GetCollectionsFunc: func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error) {
 // 	               panic("mock out the GetCollections method")
 //             },
-//             UpdateCollectionFunc: func(ctx context.Context, collection *models.Collection, eTagSelector string, currentCollection *models.Collection) (string, error) {
-// 	               panic("mock out the UpdateCollection method")
+//             ReplaceCollectionFunc: func(ctx context.Context, collection *models.Collection, eTagSelector string) error {
+// 	               panic("mock out the ReplaceCollection method")
 //             },
 //         }
 //
@@ -61,8 +61,8 @@ type CollectionStoreMock struct {
 	// GetCollectionsFunc mocks the GetCollections method.
 	GetCollectionsFunc func(ctx context.Context, queryParams collections.QueryParams) ([]models.Collection, int, error)
 
-	// UpdateCollectionFunc mocks the UpdateCollection method.
-	UpdateCollectionFunc func(ctx context.Context, collection *models.Collection, eTagSelector string, currentCollection *models.Collection) (string, error)
+	// ReplaceCollectionFunc mocks the ReplaceCollection method.
+	ReplaceCollectionFunc func(ctx context.Context, collection *models.Collection, eTagSelector string) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -103,16 +103,14 @@ type CollectionStoreMock struct {
 			// QueryParams is the queryParams argument value.
 			QueryParams collections.QueryParams
 		}
-		// UpdateCollection holds details about calls to the UpdateCollection method.
-		UpdateCollection []struct {
+		// ReplaceCollection holds details about calls to the ReplaceCollection method.
+		ReplaceCollection []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Collection is the collection argument value.
 			Collection *models.Collection
 			// ETagSelector is the eTagSelector argument value.
 			ETagSelector string
-			// CurrentCollection is the currentCollection argument value.
-			CurrentCollection *models.Collection
 		}
 	}
 	lockAddCollection       sync.RWMutex
@@ -120,7 +118,7 @@ type CollectionStoreMock struct {
 	lockGetCollectionByName sync.RWMutex
 	lockGetCollectionEvents sync.RWMutex
 	lockGetCollections      sync.RWMutex
-	lockUpdateCollection    sync.RWMutex
+	lockReplaceCollection   sync.RWMutex
 }
 
 // AddCollection calls AddCollectionFunc.
@@ -302,45 +300,41 @@ func (mock *CollectionStoreMock) GetCollectionsCalls() []struct {
 	return calls
 }
 
-// UpdateCollection calls UpdateCollectionFunc.
-func (mock *CollectionStoreMock) UpdateCollection(ctx context.Context, collection *models.Collection, eTagSelector string, currentCollection *models.Collection) (string, error) {
-	if mock.UpdateCollectionFunc == nil {
-		panic("CollectionStoreMock.UpdateCollectionFunc: method is nil but CollectionStore.UpdateCollection was just called")
+// ReplaceCollection calls ReplaceCollectionFunc.
+func (mock *CollectionStoreMock) ReplaceCollection(ctx context.Context, collection *models.Collection, eTagSelector string) error {
+	if mock.ReplaceCollectionFunc == nil {
+		panic("CollectionStoreMock.ReplaceCollectionFunc: method is nil but CollectionStore.ReplaceCollection was just called")
 	}
 	callInfo := struct {
-		Ctx               context.Context
-		Collection        *models.Collection
-		ETagSelector      string
-		CurrentCollection *models.Collection
+		Ctx          context.Context
+		Collection   *models.Collection
+		ETagSelector string
 	}{
-		Ctx:               ctx,
-		Collection:        collection,
-		ETagSelector:      eTagSelector,
-		CurrentCollection: currentCollection,
+		Ctx:          ctx,
+		Collection:   collection,
+		ETagSelector: eTagSelector,
 	}
-	mock.lockUpdateCollection.Lock()
-	mock.calls.UpdateCollection = append(mock.calls.UpdateCollection, callInfo)
-	mock.lockUpdateCollection.Unlock()
-	return mock.UpdateCollectionFunc(ctx, collection, eTagSelector, currentCollection)
+	mock.lockReplaceCollection.Lock()
+	mock.calls.ReplaceCollection = append(mock.calls.ReplaceCollection, callInfo)
+	mock.lockReplaceCollection.Unlock()
+	return mock.ReplaceCollectionFunc(ctx, collection, eTagSelector)
 }
 
-// UpdateCollectionCalls gets all the calls that were made to UpdateCollection.
+// ReplaceCollectionCalls gets all the calls that were made to ReplaceCollection.
 // Check the length with:
-//     len(mockedCollectionStore.UpdateCollectionCalls())
-func (mock *CollectionStoreMock) UpdateCollectionCalls() []struct {
-	Ctx               context.Context
-	Collection        *models.Collection
-	ETagSelector      string
-	CurrentCollection *models.Collection
+//     len(mockedCollectionStore.ReplaceCollectionCalls())
+func (mock *CollectionStoreMock) ReplaceCollectionCalls() []struct {
+	Ctx          context.Context
+	Collection   *models.Collection
+	ETagSelector string
 } {
 	var calls []struct {
-		Ctx               context.Context
-		Collection        *models.Collection
-		ETagSelector      string
-		CurrentCollection *models.Collection
+		Ctx          context.Context
+		Collection   *models.Collection
+		ETagSelector string
 	}
-	mock.lockUpdateCollection.RLock()
-	calls = mock.calls.UpdateCollection
-	mock.lockUpdateCollection.RUnlock()
+	mock.lockReplaceCollection.RLock()
+	calls = mock.calls.ReplaceCollection
+	mock.lockReplaceCollection.RUnlock()
 	return calls
 }

@@ -56,3 +56,47 @@ func TestCollectionHash(t *testing.T) {
 		})
 	})
 }
+
+func TestGetNewETagForUpdate(t *testing.T) {
+
+	Convey("Given a filer that we want to update", t, func() {
+
+		newCollection := func() *Collection {
+			return &Collection{
+				ID:          "1234",
+				Name:        "collection name",
+				PublishDate: &time.Time{},
+				LastUpdated: time.Time{},
+			}
+		}
+		collection := newCollection()
+
+		update := &Collection{
+			Name: "updatedCollectionName",
+		}
+
+		Convey("getNewETagForUpdate returns an eTag that is different from the original collection ETag", func() {
+			eTag1, err := collection.NewETagForUpdate(update)
+			So(err, ShouldBeNil)
+			So(eTag1, ShouldNotEqual, collection.ETag)
+
+			Convey("Applying the same update to a different collection results in a different ETag", func() {
+				collection2 := newCollection()
+				collection2.ID = "someOtherCollectionID"
+				eTag2, err := collection2.NewETagForUpdate(update)
+				So(err, ShouldBeNil)
+				So(eTag2, ShouldNotEqual, eTag1)
+			})
+
+			Convey("Applying a different update to the same collection results in a different ETag", func() {
+				updatedTime := collection.PublishDate.Add(time.Second)
+				update2 := &Collection{
+					PublishDate: &updatedTime,
+				}
+				eTag3, err := collection.NewETagForUpdate(update2)
+				So(err, ShouldBeNil)
+				So(eTag3, ShouldNotEqual, eTag1)
+			})
+		})
+	})
+}

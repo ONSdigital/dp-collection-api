@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
-	"github.com/ONSdigital/dp-collection-api/mongo"
 	"github.com/ONSdigital/dp-collection-api/pagination"
 	"github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	dphttp "github.com/ONSdigital/dp-net/http"
@@ -77,13 +76,19 @@ func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 	WriteJSONBody(ctx, collection, w, logData)
 }
 
-func (api *API) AddCollectionHandler(w http.ResponseWriter, r *http.Request) {
+func (api *API) PostCollectionHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer dphttp.DrainBody(r)
 	ctx := r.Context()
 	logData := log.Data{}
 
 	collection, err := ParseCollection(ctx, r.Body)
+	if err != nil {
+		handleError(ctx, err, w, logData)
+		return
+	}
+
+	collection.ID, err = NewID()
 	if err != nil {
 		handleError(ctx, err, w, logData)
 		return
@@ -135,16 +140,14 @@ func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var newETag string
+	collection.ID = collectionID
 
-	currentCollection, err := api.collectionStore.GetCollectionByID(ctx, collectionID, eTag)
-
-	if newETag, err = api.collectionStore.UpdateCollection(ctx, collection, eTag, currentCollection); err != nil {
+	if err := api.collectionStore.ReplaceCollection(ctx, collection, eTag); err != nil {
 		handleError(ctx, err, w, logData)
 		return
 	}
 
-	setETag(w, newETag)
+	setETag(w, collection.ETag)
 	w.WriteHeader(http.StatusOK)
 	err = WriteJSONBody(ctx, collection, w, logData)
 	if err != nil {
@@ -191,7 +194,8 @@ func ParseCollection(ctx context.Context, reader io.Reader) (*models.Collection,
 		return nil, ErrUnableToParseJSON
 	}
 
-	collection.ID, err = NewID()
+	// set eTag value to current hash of the collection
+	collection.ETag, err = collection.Hash(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +233,7 @@ func readCollectionsQueryParams(req *http.Request, paginator Paginator) (*collec
 func getIfMatch(r *http.Request) string {
 	ifMatch := r.Header.Get("If-Match")
 	if ifMatch == "" {
-		return mongo.AnyETag
+		return models.AnyETag
 	}
 	return ifMatch
 }

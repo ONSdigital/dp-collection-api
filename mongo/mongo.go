@@ -6,12 +6,10 @@ import (
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	mongo "github.com/ONSdigital/dp-mongodb"
 	dpMongoHealth "github.com/ONSdigital/dp-mongodb/v2/pkg/health"
 	dpMongoDriver "github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/globalsign/mgo"
-	bson2 "github.com/globalsign/mgo/bson"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
@@ -155,20 +153,33 @@ func (m *Mongo) GetCollectionByID(ctx context.Context, id string, eTagSelector s
 	}
 
 	// If eTag was provided and did not match, return the corresponding error
-	if eTagSelector != AnyETag && eTagSelector != result.ETag {
+	if eTagSelector != models.AnyETag && eTagSelector != result.ETag {
 		return nil, errors.New("conflict when retrieving the Collection")
 	}
 
 	return result, nil
 }
 
-// AddCollection adds a collection
+// AddCollection adds or updates a collection
 func (m *Mongo) AddCollection(ctx context.Context, collection *models.Collection) error {
-	var err error
-	// set eTag value to current hash of the collection
-	collection.ETag, err = collection.Hash(nil)
-	if err != nil {
-		return err
+	update := bson.M{
+		"$set": collection,
+		"$setOnInsert": bson.M{
+			"last_updated": time.Now(),
+		},
+	}
+
+	_, err := m.Connection.C(m.CollectionsCollection).UpsertId(ctx, collection.ID, update)
+
+	return err
+}
+
+// ReplaceCollection replaces an existing collection
+func (m *Mongo) ReplaceCollection(ctx context.Context, collection *models.Collection, eTagSelector string) error {
+
+	selector := bson.M{
+		"_id":   collection.ID,
+		"e_tag": eTagSelector,
 	}
 
 	update := bson.M{
@@ -178,38 +189,14 @@ func (m *Mongo) AddCollection(ctx context.Context, collection *models.Collection
 		},
 	}
 
-	_, err = m.Connection.C(m.CollectionsCollection).UpsertId(ctx, collection.ID, update)
-
-	return err
-}
-
-// UpdateCollection updates a collection
-func (m *Mongo) UpdateCollection(ctx context.Context, updatedCollection *models.Collection, eTagSelector string, currentCollection *models.Collection) (newETag string, err error) {
-	// calculate the new eTag hash for the collection that would result from applying the update
-	newETag, err = newETagForUpdate(currentCollection, updatedCollection)
-	if err != nil {
-		return "", err
-	}
-
-	selector := bson.M{
-		"_id":   updatedCollection.ID,
-		"e_tag": eTagSelector,
-	}
-
-	update, err := mongo.WithUpdates(bson2.M(bson.M{
-		"$set": bson.M{
-			"e_tag": newETag,
-		},
-	}))
-
 	if _, err := m.Connection.C(m.CollectionsCollection).Update(ctx, selector, update); err != nil {
 		if err == mgo.ErrNotFound {
-			return "", collections.ErrCollectionConflict
+			return collections.ErrCollectionConflict
 		}
-		return "", err
+		return err
 	}
 
-	return newETag, nil
+	return nil
 }
 
 // GetCollectionEvents retrieves all events for a collection
