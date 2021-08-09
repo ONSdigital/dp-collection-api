@@ -17,7 +17,7 @@ type Collection struct {
 	Name        string     `bson:"name,omitempty"         json:"name,omitempty"`
 	PublishDate *time.Time `bson:"publish_date,omitempty" json:"publish_date,omitempty"`
 	LastUpdated time.Time  `bson:"last_updated,omitempty" json:"-"`
-	ETag        string     `bson:"e_tag"                  json:"-"`
+	ETag        string     `bson:"e_tag"                  json:"e_tag,omitempty"`
 }
 
 // CollectionsResponse represents a paginated list of collections

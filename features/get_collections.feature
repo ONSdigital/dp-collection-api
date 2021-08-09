@@ -200,16 +200,19 @@ Feature: Get Collections
                 {
                     "id": "00112233-4455-6677-8899-aabbccddeeff",
                     "name": "LMSV1",
+                    "e_tag": "123",
                     "publish_date": "2020-05-10T14:58:29.317Z"
                 },
                 {
                     "id": "10112233-4455-6677-8899-aabbccddeeff",
                     "name": "LMSV2",
+                    "e_tag": "567",
                     "publish_date": "2020-05-05T14:58:29.317Z"
                 },
                 {
                     "id": "20112233-4455-6677-8899-aabbccddeeff",
                     "name": "LMSV3",
+                    "e_tag": "456",
                     "publish_date": "2020-05-08T14:58:29.317Z"
                 }
             ]
@@ -217,12 +220,13 @@ Feature: Get Collections
         When I GET "/collections/00112233-4455-6677-8899-aabbccddeeff"
         Then the HTTP status code should be "200"
         And the response header "Content-Type" should be "application/json; charset=utf-8"
-        And the response header "Etag" should be "e74a91158a30943ce95a254cb5309b434c06fee4"
+        And the response header "Etag" should be "123"
         And I should receive the following JSON response:
         """
         {
             "id": "00112233-4455-6677-8899-aabbccddeeff",
             "name": "LMSV1",
+            "e_tag":"123",
             "publish_date": "2020-05-10T14:58:29.317Z"
         }
         """
@@ -243,7 +247,6 @@ Feature: Get Collections
                 }
             ]
         """
-
 
         When I GET "/collections/00112233-4455-6677-8899-aabbccddeeff"
         Then the HTTP status code should be "404"

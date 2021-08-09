@@ -126,11 +126,17 @@ func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
 
 	log.Event(ctx, "put collection", log.INFO, logData)
 
+	err := ValidateUUID(collectionID)
+	if err != nil {
+		handleError(ctx, collections.ErrInvalidID, w, logData)
+		return
+	}
+
 	// eTag value must be present in If-Match header
 	eTag, err := getIfMatchForce(req)
 	if err != nil {
 		log.Event(ctx, "missing header", log.ERROR, log.Data{"error": err.Error()})
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		handleError(ctx, err, w, logData)
 		return
 	}
 
@@ -155,7 +161,7 @@ func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Event(ctx, "add collection request completed successfully", log.INFO, logData)
+	log.Event(ctx, "put collection request completed successfully", log.INFO, logData)
 }
 
 func (api *API) validateCollection(ctx context.Context, collection *models.Collection) error {
@@ -244,7 +250,7 @@ func setETag(w http.ResponseWriter, eTag string) {
 
 func getIfMatchForce(r *http.Request) (string, error) {
 	eTag := getIfMatch(r)
-	if eTag == "" {
+	if eTag == models.AnyETag {
 		err := collections.ErrNoIfMatchHeader
 		return "", err
 	}

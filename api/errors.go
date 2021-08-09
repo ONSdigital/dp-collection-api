@@ -20,6 +20,7 @@ var (
 		collections.ErrNameSearchTooLong:     true,
 		collections.ErrCollectionNameEmpty:   true,
 		collections.ErrInvalidID:             true,
+		collections.ErrNoIfMatchHeader:       true,
 		ErrUnableToParseJSON:                 true,
 	}
 

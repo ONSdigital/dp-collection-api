@@ -33,6 +33,7 @@ var invalidCollectionID = "abc123"
 var expectedCollection = models.Collection{
 	ID:          collectionID,
 	Name:        "collection 1",
+	ETag:        "eTag",
 	PublishDate: &time.Time{},
 	LastUpdated: time.Time{},
 }
@@ -694,15 +695,86 @@ func TestPutCollection(t *testing.T) {
 	})
 }
 
+func TestPutCollection_invalidCollectionID(t *testing.T) {
+
+	collectionJson := `{
+		"name": "Coronavirus key indicators",
+		"publish_date": "2020-05-05T14:58:29.317Z"
+	}`
+
+	Convey("Given a request to PUT a collection with an invalid collection UUID", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+
+		r := httptest.NewRequest("PUT", "http://localhost:26000/collections", bytes.NewBufferString(collectionJson))
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+
+			r = mux.SetURLVars(r, map[string]string{
+				"collection_id": invalidCollectionID,
+			})
+
+			api.PutCollectionHandler(w, r)
+
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusBadRequest)
+			})
+
+			Convey("Then the response body should contain the expected error response", func() {
+				body, err := ioutil.ReadAll(w.Body)
+				So(err, ShouldBeNil)
+				response := models.ErrorsResponse{}
+				err = json.Unmarshal(body, &response)
+				So(err, ShouldBeNil)
+				So(len(response.Errors), ShouldEqual, 1)
+				So(response.Errors[0].Message, ShouldEqual, collections.ErrInvalidID.Error())
+			})
+		})
+	})
+}
+
+func TestPutCollection_emptyIfMatchHeaderError(t *testing.T) {
+
+	collectionJson := `{
+		"name": "Coronavirus key indicators",
+		"publish_date": "2020-05-05T14:58:29.317Z"
+	}`
+
+	Convey("Given a request to PUT a collection with an empty ", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+
+		r := httptest.NewRequest("PUT", "http://localhost:26000/collections", bytes.NewBufferString(collectionJson))
+		w := httptest.NewRecorder()
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+
+			r = mux.SetURLVars(r, map[string]string{
+				"collection_id": collectionID,
+			})
+
+			api.PutCollectionHandler(w, r)
+
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusBadRequest)
+			})
+		})
+	})
+}
+
 func TestPutCollection_noETagInRequest(t *testing.T) {
 
 	collectionJson := `{
 		"name": "Coronavirus key indicators",
 		"publish_date": "2020-05-05T14:58:29.317Z"
 	}`
-	expectedName := "Coronavirus key indicators"
-	expectedETagSelector := "*"
-	expectedETag := "8945d466e009a6e5bb94b5a3b54fe91e81d24267"
 
 	Convey("Given a request to PUT a collection with no If-Match header", t, func() {
 
@@ -722,7 +794,53 @@ func TestPutCollection_noETagInRequest(t *testing.T) {
 
 			api.PutCollectionHandler(w, r)
 
-			Convey("Then the collection store is called with the expected wildcard etag", func() {
+			Convey("Then the response has the expected status code", func() {
+				So(w.Code, ShouldEqual, http.StatusBadRequest)
+			})
+
+			Convey("Then the response body should contain the expected error response", func() {
+				body, err := ioutil.ReadAll(w.Body)
+				So(err, ShouldBeNil)
+				response := models.ErrorsResponse{}
+				err = json.Unmarshal(body, &response)
+				So(err, ShouldBeNil)
+				So(len(response.Errors), ShouldEqual, 1)
+				So(response.Errors[0].Message, ShouldEqual, collections.ErrNoIfMatchHeader.Error())
+			})
+		})
+	})
+}
+
+func TestPutCollection_storeError(t *testing.T) {
+
+	collectionJson := `{
+		"name": "Coronavirus key indicators",
+		"publish_date": "2020-05-05T14:58:29.317Z"
+	}`
+	expectedName := "Coronavirus key indicators"
+	expectedETag := "8945d466e009a6e5bb94b5a3b54fe91e81d24267"
+
+	Convey("Given a request to PUT a collection", t, func() {
+
+		paginator := mockPaginator()
+		collectionStore := mockCollectionStore()
+
+		r := httptest.NewRequest("PUT", "http://localhost:26000/collections", bytes.NewBufferString(collectionJson))
+		w := httptest.NewRecorder()
+
+		r.Header.Add("If-Match", expectedETag)
+
+		Convey("When the request is sent to the API", func() {
+
+			api := api.Setup(context.Background(), mux.NewRouter(), paginator, collectionStore)
+
+			r = mux.SetURLVars(r, map[string]string{
+				"collection_id": collectionID,
+			})
+
+			api.PutCollectionHandler(w, r)
+
+			Convey("Then the collection store is called with the expected values", func() {
 				So(len(collectionStore.ReplaceCollectionCalls()), ShouldEqual, 1)
 
 				savedCollection := collectionStore.ReplaceCollectionCalls()[0].Collection
@@ -732,7 +850,7 @@ func TestPutCollection_noETagInRequest(t *testing.T) {
 				So(savedCollection.PublishDate.String(), ShouldEqual, "2020-05-05 14:58:29.317 +0000 UTC")
 
 				eTagSelector := collectionStore.ReplaceCollectionCalls()[0].ETagSelector
-				So(eTagSelector, ShouldEqual, expectedETagSelector)
+				So(eTagSelector, ShouldEqual, expectedETag)
 			})
 
 			Convey("Then the response has the expected status code", func() {

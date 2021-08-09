@@ -58,14 +58,6 @@ func (c *CollectionComponent) iHaveTheseCollections(input *godog.DocString) erro
 	}
 
 	for _, collection := range collections {
-
-		var err error
-		// set eTag value to current hash of the collection
-		collection.ETag, err = collection.Hash(nil)
-		if err != nil {
-			return err
-		}
-
 		if err := c.putDocumentInDatabase(collection, collection.ID, c.config.MongoConfig.CollectionsCollection); err != nil {
 			return err
 		}

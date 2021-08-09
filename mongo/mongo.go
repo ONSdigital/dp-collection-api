@@ -9,7 +9,6 @@ import (
 	dpMongoHealth "github.com/ONSdigital/dp-mongodb/v2/pkg/health"
 	dpMongoDriver "github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
 	"github.com/ONSdigital/log.go/v2/log"
-	"github.com/globalsign/mgo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
@@ -189,13 +188,14 @@ func (m *Mongo) ReplaceCollection(ctx context.Context, collection *models.Collec
 		},
 	}
 
-	if _, err := m.Connection.C(m.CollectionsCollection).Update(ctx, selector, update); err != nil {
-		if err == mgo.ErrNotFound {
-			return collections.ErrCollectionConflict
-		}
+	result, err := m.Connection.C(m.CollectionsCollection).Update(ctx, selector, update)
+	if err != nil {
 		return err
 	}
-
+	if result.ModifiedCount == 0 {
+		// etag value did not match
+		return collections.ErrCollectionConflict
+	}
 	return nil
 }
 

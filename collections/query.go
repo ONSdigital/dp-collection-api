@@ -23,7 +23,7 @@ var ErrCollectionNotFound = errors.New("collection not found")
 var ErrInvalidID = errors.New("collection id must be valid UUID")
 
 // ErrCollectionConflict is the error used when the provided eTag does not match
-var ErrCollectionConflict = errors.New("collection conflict")
+var ErrCollectionConflict = errors.New("out of date collection resource")
 
 var ErrNoIfMatchHeader = errors.New("required If-Match header not provided")
 
