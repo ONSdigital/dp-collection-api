@@ -57,13 +57,13 @@ parameters:
     in: header
     required: false
     type: string
-  newCollection:
+  collection:
     name: collection
     description: "A `collection` to be added"
     in: body
     required: true
     schema:
-      $ref: '#/definitions/NewCollection'
+      $ref: '#/definitions/Collection'
 paths:
   /health:
     get:
@@ -128,7 +128,7 @@ paths:
     post:
       summary: "Creates a new collection"
       parameters:
-        - $ref: "#/parameters/newCollection"
+        - $ref: "#/parameters/collection"
       responses:
         201:
           description: "Successfully added a collection"
@@ -173,26 +173,24 @@ paths:
       summary: "Update a collection"
       description: "Update the collection, e.g. by changing the publish_date"
       parameters:
-        - $ref: '#/parameters/submitted'
-        - $ref: '#/parameters/update_filter'
+        - $ref: '#/parameters/collection_id'
+        - $ref: "#/parameters/collection"
         - $ref: '#/parameters/if_match'
       responses:
         200:
-          description: "The filter job has been updated"
+          description: "The collection has been updated"
           schema:
-            $ref: '#/definitions/UpdateFilterResponse'
+            $ref: '#/definitions/Collection'
           headers:
             ETag:
               type: string
-              description: "Defines a unique filter resource version"
+              description: "Defines a unique collection resource version"
         400:
           description: "Invalid request body or If-Match header not provided"
         404:
-          $ref: '#/responses/FilterNotFound'
+          description: "Collection not found matching the id provided"
         409:
-          description: '#/responses/FilterConflict'
-        422:
-          description: "Unprocessable entity - instance has been removed"
+          $ref: '#/responses/ConflictError'
         500:
           $ref: '#/responses/InternalError'
   /collections/{collection_id}/events:
@@ -257,26 +255,6 @@ definitions:
         format: date-time
         example: "2020-04-26T08:05:52Z"
         default: "to be determined"
-  NewCollection:
-    description: "A model for a `collection` which is to be added"
-    type: object
-    required:
-      - name
-    properties:
-      name:
-        description: "Name of the collection"
-        type: string
-        example: "Coronavirus key indicators"
-      type:
-        description: "Way in which collection will be published"
-        type: string
-        enum: [manual, scheduled]
-      publish_date:
-        description: "Date when the collection should be published"
-        type: string
-        format: date-time
-        default: "to be determined"
-        example: "2020-04-26T08:05:52Z"
   Event:
     description: "An event related to a specific collection"
     type: object
