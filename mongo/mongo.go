@@ -160,7 +160,7 @@ func (m *Mongo) GetCollectionByID(ctx context.Context, id string, eTagSelector s
 
 	// If eTag was provided and did not match, return the corresponding error
 	if eTagSelector != models.AnyETag && eTagSelector != result.ETag {
-		return nil, errors.New("conflict when retrieving the Collection")
+		return nil, collections.ErrCollectionConflict
 	}
 
 	return result, nil

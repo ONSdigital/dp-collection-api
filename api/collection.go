@@ -62,10 +62,6 @@ func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 
 	collection, err := api.collectionStore.GetCollectionByID(ctx, collectionID, eTag)
 	if err != nil {
-		if err.Error() == "conflict when retrieving the Collection" {
-			handleError(ctx, collections.ErrCollectionConflict, w, logData)
-			return
-		}
 		handleError(ctx, err, w, logData)
 		return
 	}
