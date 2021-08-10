@@ -4,7 +4,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"github.com/ONSdigital/dp-collection-api/pagination"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 	"time"
 )
 
