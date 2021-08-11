@@ -685,7 +685,7 @@ func TestPutCollection(t *testing.T) {
 				So(w.Header().Get("Etag"), ShouldEqual, expectedETag)
 			})
 
-			Convey("Then the response body should contain the collections", func() {
+			Convey("Then the response body should contain the collection", func() {
 				body, err := ioutil.ReadAll(w.Body)
 				So(err, ShouldBeNil)
 				response := models.Collection{}
@@ -819,13 +819,15 @@ func TestPutCollection_storeError(t *testing.T) {
 		"name": "Coronavirus key indicators",
 		"publish_date": "2020-05-05T14:58:29.317Z"
 	}`
-	expectedName := "Coronavirus key indicators"
 	expectedETag := "8945d466e009a6e5bb94b5a3b54fe91e81d24267"
 
 	Convey("Given a request to PUT a collection", t, func() {
 
 		paginator := mockPaginator()
 		collectionStore := mockCollectionStore()
+		collectionStore.ReplaceCollectionFunc = func(ctx context.Context, collection *models.Collection, etagSelector string) error {
+			return errors.New("db is broken")
+		}
 
 		r := httptest.NewRequest("PUT", "http://localhost:26000/collections", bytes.NewBufferString(collectionJson))
 		w := httptest.NewRecorder()
@@ -842,34 +844,8 @@ func TestPutCollection_storeError(t *testing.T) {
 
 			api.PutCollectionHandler(w, r)
 
-			Convey("Then the collection store is called with the expected values", func() {
-				So(len(collectionStore.ReplaceCollectionCalls()), ShouldEqual, 1)
-
-				savedCollection := collectionStore.ReplaceCollectionCalls()[0].Collection
-				So(savedCollection.ID, ShouldEqual, collectionID)
-				So(savedCollection.Name, ShouldEqual, expectedName)
-				So(savedCollection.ETag, ShouldEqual, expectedETag)
-				So(savedCollection.PublishDate.String(), ShouldEqual, "2020-05-05 14:58:29.317 +0000 UTC")
-
-				eTagSelector := collectionStore.ReplaceCollectionCalls()[0].ETagSelector
-				So(eTagSelector, ShouldEqual, expectedETag)
-			})
-
 			Convey("Then the response has the expected status code", func() {
-				So(w.Code, ShouldEqual, http.StatusOK)
-			})
-
-			Convey("Then the response has the expected etag header", func() {
-				So(w.Header().Get("Etag"), ShouldEqual, expectedETag)
-			})
-
-			Convey("Then the response body should contain the collections", func() {
-				body, err := ioutil.ReadAll(w.Body)
-				So(err, ShouldBeNil)
-				response := models.Collection{}
-				err = json.Unmarshal(body, &response)
-				So(err, ShouldBeNil)
-				So(response.Name, ShouldEqual, expectedName)
+				So(w.Code, ShouldEqual, http.StatusInternalServerError)
 			})
 		})
 	})

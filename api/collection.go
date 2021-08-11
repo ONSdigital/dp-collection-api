@@ -50,6 +50,7 @@ func (api *API) GetCollectionHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	logData := log.Data{}
 	eTag := getIfMatch(req)
+	logData["e_tag"] = eTag
 
 	collectionID := mux.Vars(req)["collection_id"]
 	logData["collection_id"] = collectionID
@@ -140,6 +141,7 @@ func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
 		handleError(ctx, err, w, logData)
 		return
 	}
+	logData["e_tag"] = eTag
 
 	collection, err := ParseCollection(ctx, req.Body)
 	if err != nil {

@@ -20,11 +20,13 @@ var ErrNilCollection = errors.New("could not validate a nil collection")
 // ErrCollectionNotFound is the error used when a particular collection is not found
 var ErrCollectionNotFound = errors.New("collection not found")
 
+// ErrInvalidID is the error used when an invalid collection ID format is used
 var ErrInvalidID = errors.New("collection id must be valid UUID")
 
 // ErrCollectionConflict is the error used when the provided eTag does not match
 var ErrCollectionConflict = errors.New("out of date collection resource")
 
+// ErrNoIfMatchHeader is the error used when an If-Match is required but not provided
 var ErrNoIfMatchHeader = errors.New("required If-Match header not provided")
 
 // QueryParams represents the query parameters that can be sent to get collections
