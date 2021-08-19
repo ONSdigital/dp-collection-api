@@ -27,7 +27,7 @@ func main() {
 	ctx := context.Background()
 
 	if err := run(ctx); err != nil {
-		log.Fatal(nil, "fatal runtime error", err)
+		log.Fatal(ctx, "fatal runtime error", err)
 		os.Exit(1)
 	}
 }
@@ -46,7 +46,7 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "error getting configuration")
 	}
-	log.Event(ctx, "loaded config", log.INFO, log.Data{"config": cfg})
+	log.Info(ctx, "loaded config", log.Data{"config": cfg})
 
 	service, err := service.New(ctx, cfg, BuildTime, GitCommit, Version)
 	if err != nil {

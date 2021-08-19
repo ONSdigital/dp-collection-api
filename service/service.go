@@ -2,12 +2,13 @@ package service
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"github.com/ONSdigital/dp-collection-api/mongo"
 	"github.com/ONSdigital/dp-collection-api/pagination"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
-	"net/http"
-	"time"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 
 	"github.com/ONSdigital/dp-collection-api/api"
 	"github.com/ONSdigital/dp-collection-api/config"
@@ -101,7 +102,7 @@ func (svc *Service) Start(ctx context.Context, svcErrors chan error) {
 
 	// Run the http server in a new go-routine
 	go func() {
-		log.Event(ctx, "starting api", log.INFO)
+		log.Info(ctx, "starting api")
 		if err := svc.server.ListenAndServe(); err != nil {
 			svcErrors <- errors.Wrap(err, "failure in http listen and serve")
 		}
