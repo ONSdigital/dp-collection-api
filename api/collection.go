@@ -3,15 +3,16 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"github.com/ONSdigital/dp-collection-api/collections"
-	"github.com/ONSdigital/dp-collection-api/models"
-	"github.com/ONSdigital/dp-collection-api/pagination"
-	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/log.go/v2/log"
-	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/ONSdigital/dp-collection-api/collections"
+	"github.com/ONSdigital/dp-collection-api/models"
+	"github.com/ONSdigital/dp-collection-api/pagination"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/gorilla/mux"
 )
 
 // GetCollectionsHandler handles HTTP requests for the get collections endpoint
@@ -109,7 +110,7 @@ func (api *API) PostCollectionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Event(ctx, "add collection request completed successfully", log.INFO, logData)
+	log.Info(ctx, "add collection request completed successfully", logData)
 }
 
 func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
@@ -120,7 +121,7 @@ func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
 	collectionID := mux.Vars(req)["collection_id"]
 	logData["collection_id"] = collectionID
 
-	log.Event(ctx, "put collection", log.INFO, logData)
+	log.Info(ctx, "put collection", logData)
 
 	err := ValidateUUID(collectionID)
 	if err != nil {
@@ -137,7 +138,7 @@ func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
 	// eTag value must be present in If-Match header
 	eTag, err := getIfMatchForce(req)
 	if err != nil {
-		log.Event(ctx, "missing header", log.ERROR, log.Data{"error": err.Error()})
+		log.Error(ctx, "missing header", err, log.Data{"error": err.Error()})
 		handleError(ctx, err, w, logData)
 		return
 	}
@@ -164,7 +165,7 @@ func (api *API) PutCollectionHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Event(ctx, "put collection request completed successfully", log.INFO, logData)
+	log.Info(ctx, "put collection request completed successfully", logData)
 }
 
 func (api *API) validateCollection(ctx context.Context, collection *models.Collection) error {
