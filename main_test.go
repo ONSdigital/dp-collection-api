@@ -11,7 +11,7 @@ import (
 	"github.com/cucumber/godog/colors"
 )
 
-const MongoVersion = "5.0.2"
+const MongoVersion = "4.4.8"
 const DatabaseName = "testing"
 
 var componentFlag = flag.Bool("component", false, "perform component tests")
