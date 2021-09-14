@@ -10,7 +10,6 @@ require (
 	github.com/ONSdigital/dp-mongodb/v2 v2.2.0
 	github.com/ONSdigital/dp-net/v2 v2.2.0-beta
 	github.com/ONSdigital/log.go/v2 v2.0.6
-	github.com/benweissmann/memongo v0.1.1
 	github.com/cucumber/godog v0.11.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gorilla/mux v1.8.0

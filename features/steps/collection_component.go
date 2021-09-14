@@ -3,15 +3,16 @@ package steps
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/ONSdigital/dp-collection-api/config"
 	"github.com/ONSdigital/dp-collection-api/mongo"
 	"github.com/ONSdigital/dp-collection-api/service"
 	"github.com/ONSdigital/dp-collection-api/service/mock"
-	"github.com/benweissmann/memongo"
-	"net/http"
-	"time"
 
 	componenttest "github.com/ONSdigital/dp-component-test"
+	"github.com/ONSdigital/dp-component-test/utils"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 )
 
@@ -45,7 +46,7 @@ func NewCollectionComponent(mongoFeature *componenttest.MongoFeature) (*Collecti
 
 	mongoURI := fmt.Sprintf("localhost:%d", mongoFeature.Server.Port())
 	c.mongoClient = &mongo.Mongo{
-		Database:              memongo.RandomDatabase(),
+		Database:              utils.RandomDatabase(),
 		URI:                   mongoURI,
 		CollectionsCollection: c.config.MongoConfig.CollectionsCollection,
 		EventsCollection:      c.config.MongoConfig.EventsCollection,
