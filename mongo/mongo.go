@@ -3,15 +3,16 @@ package mongo
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/ONSdigital/dp-collection-api/collections"
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dpMongoHealth "github.com/ONSdigital/dp-mongodb/v2/pkg/health"
-	dpMongoDriver "github.com/ONSdigital/dp-mongodb/v2/pkg/mongodb"
+	dpMongoHealth "github.com/ONSdigital/dp-mongodb/v3/health"
+	dpMongoDriver "github.com/ONSdigital/dp-mongodb/v3/mongodb"
 	"github.com/ONSdigital/log.go/v2/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
 const (
@@ -175,7 +176,7 @@ func (m *Mongo) AddCollection(ctx context.Context, collection *models.Collection
 		},
 	}
 
-	_, err := m.Connection.C(m.CollectionsCollection).UpsertId(ctx, collection.ID, update)
+	_, err := m.Connection.C(m.CollectionsCollection).UpsertById(ctx, collection.ID, update)
 
 	return err
 }

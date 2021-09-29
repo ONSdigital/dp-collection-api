@@ -7,7 +7,7 @@ replace github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
 require (
 	github.com/ONSdigital/dp-component-test v0.5.0
 	github.com/ONSdigital/dp-healthcheck v1.1.0
-	github.com/ONSdigital/dp-mongodb/v2 v2.2.0
+	github.com/ONSdigital/dp-mongodb/v3 v3.0.0-beta
 	github.com/ONSdigital/dp-net/v2 v2.2.0-beta
 	github.com/ONSdigital/log.go/v2 v2.0.6
 	github.com/cucumber/godog v0.11.0

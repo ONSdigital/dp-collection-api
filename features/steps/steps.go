@@ -3,11 +3,12 @@ package steps
 import (
 	"context"
 	"encoding/json"
+	"time"
+
 	"github.com/ONSdigital/dp-collection-api/models"
 	"github.com/cucumber/godog"
 	"github.com/gofrs/uuid"
 	"go.mongodb.org/mongo-driver/bson"
-	"time"
 )
 
 func (c *CollectionComponent) RegisterSteps(ctx *godog.ScenarioContext) {
@@ -79,7 +80,7 @@ func (c *CollectionComponent) putDocumentInDatabase(document interface{}, id, co
 			"last_updated": time.Now(),
 		},
 	}
-	_, err := c.mongoClient.Connection.C(collectionName).UpsertId(context.Background(), id, update)
+	_, err := c.mongoClient.Connection.C(collectionName).UpsertById(context.Background(), id, update)
 	if err != nil {
 		return err
 	}
