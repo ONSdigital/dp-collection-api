@@ -5,9 +5,9 @@ go 1.17
 replace github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
 
 require (
-	github.com/ONSdigital/dp-component-test v0.5.0
+	github.com/ONSdigital/dp-component-test v0.6.0
 	github.com/ONSdigital/dp-healthcheck v1.1.0
-	github.com/ONSdigital/dp-mongodb/v3 v3.0.0-beta
+	github.com/ONSdigital/dp-mongodb/v3 v3.0.0-beta.1
 	github.com/ONSdigital/dp-net/v2 v2.2.0-beta
 	github.com/ONSdigital/log.go/v2 v2.0.6
 	github.com/cucumber/godog v0.11.0
@@ -56,6 +56,5 @@ require (
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
 	golang.org/x/sys v0.0.0-20210414055047-fe65e336abe0 // indirect
 	golang.org/x/text v0.3.5 // indirect
-	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
