@@ -42,9 +42,11 @@ func (m *Mongo) getConnectionConfig() *dpMongoDriver.MongoConnectionConfig {
 		ClusterEndpoint:               m.URI,
 		Database:                      m.Database,
 		Collection:                    m.CollectionsCollection,
-		IsSSL:                         m.IsSSL,
 		IsWriteConcernMajorityEnabled: false,
 		IsStrongReadConcernEnabled:    false,
+		TLSConnectionConfig: dpMongoDriver.TLSConnectionConfig{
+			IsSSL: m.IsSSL,
+		},
 	}
 }
 
@@ -63,12 +65,7 @@ func (m *Mongo) Init() error {
 	databaseCollectionBuilder[(dpMongoHealth.Database)(m.Database)] = []dpMongoHealth.Collection{(dpMongoHealth.Collection)(m.CollectionsCollection)}
 
 	// Create client and health client from session AND collections
-	client := dpMongoHealth.NewClientWithCollections(mongoConnection, databaseCollectionBuilder)
-
-	m.healthClient = &dpMongoHealth.CheckMongoClient{
-		Client:      *client,
-		Healthcheck: client.Healthcheck,
-	}
+	m.healthClient = dpMongoHealth.NewClientWithCollections(mongoConnection, databaseCollectionBuilder)
 
 	return nil
 }
